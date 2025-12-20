@@ -34,7 +34,7 @@ const statusOptions: Tables<'orders'>['status'][] = [
 ];
 
 export default function AdminOrders() {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<Tables<'orders'>['status'] | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { data: orders = [], isLoading } = useAllOrders(
     statusFilter !== 'all' ? { status: statusFilter } : undefined
@@ -72,7 +72,7 @@ export default function AdminOrders() {
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as Tables<'orders'>['status'] | 'all')}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
