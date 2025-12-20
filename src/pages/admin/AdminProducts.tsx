@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { z } from 'zod';
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +26,42 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, Package, Search } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Zod schema for product validation
+const productSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(200, 'Name must be less than 200 characters'),
+  slug: z.string().trim().max(250, 'Slug must be less than 250 characters').regex(/^[a-z0-9-]*$/, 'Slug must contain only lowercase letters, numbers, and hyphens').optional().or(z.literal('')),
+  description: z.string().trim().max(5000, 'Description must be less than 5000 characters').optional().or(z.literal('')),
+  price: z.number().positive('Price must be a positive number').max(10000000, 'Price is too high'),
+  original_price: z.number().positive('Original price must be positive').max(10000000, 'Original price is too high').nullable().optional(),
+  category_id: z.string().uuid('Invalid category').nullable().optional().or(z.literal('')),
+  fabric: z.string().trim().max(100, 'Fabric must be less than 100 characters').optional().or(z.literal('')),
+  color: z.string().trim().max(50, 'Color must be less than 50 characters').optional().or(z.literal('')),
+  pattern: z.string().trim().max(100, 'Pattern must be less than 100 characters').optional().or(z.literal('')),
+  stock: z.number().int('Stock must be a whole number').min(0, 'Stock cannot be negative').max(1000000, 'Stock is too high'),
+  images: z.array(z.string().url('Invalid image URL')).max(20, 'Too many images'),
+  is_published: z.boolean(),
+  is_trending: z.boolean(),
+  is_new: z.boolean(),
+});
+
+// Helper to sanitize text input (remove potential XSS vectors)
+const sanitizeText = (text: string): string => {
+  return text
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .trim();
+};
+
+// Helper to generate a safe slug
+const generateSlug = (name: string): string => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 200);
+};
 
 export default function AdminProducts() {
   const { user } = useAuth();
@@ -88,32 +125,70 @@ export default function AdminProducts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const productData = {
-      name: formData.name,
-      slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
-      description: formData.description,
-      price: parseFloat(formData.price),
-      original_price: formData.original_price ? parseFloat(formData.original_price) : null,
+    // Parse and sanitize input values
+    const parsedPrice = parseFloat(formData.price);
+    const parsedOriginalPrice = formData.original_price ? parseFloat(formData.original_price) : null;
+    const parsedStock = parseInt(formData.stock) || 0;
+    const imageUrls = formData.images.split(',').map(s => s.trim()).filter(Boolean);
+    
+    // Build product data with sanitized values
+    const rawProductData = {
+      name: sanitizeText(formData.name),
+      slug: formData.slug ? sanitizeText(formData.slug) : generateSlug(formData.name),
+      description: sanitizeText(formData.description),
+      price: parsedPrice,
+      original_price: parsedOriginalPrice,
       category_id: formData.category_id || null,
-      fabric: formData.fabric,
-      color: formData.color,
-      pattern: formData.pattern,
-      stock: parseInt(formData.stock) || 0,
-      images: formData.images.split(',').map(s => s.trim()).filter(Boolean),
+      fabric: sanitizeText(formData.fabric),
+      color: sanitizeText(formData.color),
+      pattern: sanitizeText(formData.pattern),
+      stock: parsedStock,
+      images: imageUrls,
       is_published: formData.is_published,
       is_trending: formData.is_trending,
       is_new: formData.is_new,
+    };
+
+    // Validate with zod schema
+    const validationResult = productSchema.safeParse(rawProductData);
+    
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors;
+      const errorMessage = errors.map(err => `${err.path.join('.')}: ${err.message}`).join('\n');
+      toast.error('Validation Error', { description: errorMessage });
+      return;
+    }
+
+    const productData = {
+      name: validationResult.data.name,
+      slug: validationResult.data.slug || generateSlug(validationResult.data.name),
+      description: validationResult.data.description || null,
+      price: validationResult.data.price,
+      original_price: validationResult.data.original_price || null,
+      category_id: validationResult.data.category_id || null,
+      fabric: validationResult.data.fabric || null,
+      color: validationResult.data.color || null,
+      pattern: validationResult.data.pattern || null,
+      stock: validationResult.data.stock,
+      images: validationResult.data.images,
+      is_published: validationResult.data.is_published,
+      is_trending: validationResult.data.is_trending,
+      is_new: validationResult.data.is_new,
       seller_id: user?.id,
     };
 
-    if (editingProduct) {
-      await updateProduct.mutateAsync({ id: editingProduct.id, ...productData });
-    } else {
-      await createProduct.mutateAsync(productData);
+    try {
+      if (editingProduct) {
+        await updateProduct.mutateAsync({ id: editingProduct.id, ...productData });
+      } else {
+        await createProduct.mutateAsync(productData);
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      // Error is already handled by mutation hooks
     }
-    
-    setIsDialogOpen(false);
-    resetForm();
   };
 
   const handleDelete = async (id: string) => {
