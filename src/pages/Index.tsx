@@ -118,7 +118,7 @@ const Index = () => {
           <div 
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: 'url(https://images.unsplash.com/photo-1558171813-4c088753af8f?w=1920&q=80)',
+              backgroundImage: 'url(https://images.pexels.com/photos/6044266/pexels-photo-6044266.jpeg?auto=compress&cs=tinysrgb&w=1920)',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40" />
@@ -136,7 +136,7 @@ const Index = () => {
               transition={{ duration: 0.8 }}
             >
               <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
-                ✨ Premium Handloom Collection
+                ✨ Authentic Handwoven from Bengal & Assam
               </span>
             </motion.div>
 
@@ -146,9 +146,9 @@ const Index = () => {
               transition={{ duration: 0.8, delay: 0.1 }}
               className="text-4xl md:text-6xl lg:text-7xl font-display font-bold leading-tight mb-6"
             >
-              Discover the Art of
+              Traditional
               <br />
-              <span className="gradient-text">Indian Textiles</span>
+              <span className="gradient-text">Gamchha & Towels</span>
             </motion.h1>
 
             <motion.p
@@ -157,8 +157,8 @@ const Index = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-lg lg:text-xl text-muted-foreground max-w-xl mb-8"
             >
-              Experience the timeless tradition of handwoven gamchhas, 
-              crafted with love by skilled artisans from Bengal.
+              Discover the timeless tradition of handwoven gamchhas from Beldanga, Phulia & Santipur. 
+              Crafted with love by skilled artisans using age-old pit loom techniques.
             </motion.p>
 
             <motion.div
@@ -266,8 +266,8 @@ const Index = () => {
           >
             <div className="absolute top-0 right-0 w-1/2 h-full">
               <img
-                src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80"
-                alt="Premium Collection"
+                src="https://images.pexels.com/photos/4210343/pexels-photo-4210343.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Assamese Gamosa Collection"
                 className="w-full h-full object-cover opacity-30"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-charcoal-dark to-transparent" />
@@ -278,18 +278,18 @@ const Index = () => {
 
             <div className="relative z-10 p-8 lg:p-16 max-w-2xl">
               <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
-                Limited Edition
+                Featured Collection
               </span>
               <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
-                The Royal
+                Assamese
                 <br />
-                <span className="gradient-text">Bengal Collection</span>
+                <span className="gradient-text">Gamosa Collection</span>
               </h2>
               <p className="text-muted-foreground mb-8 max-w-md">
-                Exclusive handwoven pieces inspired by the rich heritage of Bengal. 
-                Each gamchha tells a story of tradition and craftsmanship.
+                Discover the iconic Bihu Gamosa from Assam. Each piece features intricate red borders 
+                woven with traditional motifs, symbolizing respect and hospitality.
               </p>
-              <Link to="/collections/royal-bengal">
+              <Link to="/products?category=traditional">
                 <Button variant="hero" size="lg">
                   Explore Collection
                   <ArrowRight className="h-5 w-5" />
@@ -346,10 +346,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { value: '10K+', label: 'Happy Customers' },
-              { value: '500+', label: 'Unique Designs' },
-              { value: '100%', label: 'Authentic Handloom' },
-              { value: '4.9★', label: 'Average Rating' },
+              { value: '15K+', label: 'Happy Customers' },
+              { value: '230+', label: 'Regional Variants' },
+              { value: '100%', label: 'Handwoven' },
+              { value: '4.8★', label: 'Average Rating' },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}

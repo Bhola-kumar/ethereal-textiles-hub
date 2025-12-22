@@ -119,8 +119,13 @@ const Header = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hidden lg:flex">
-                    <User className="h-5 w-5" />
+                  <Button variant="ghost" size="sm" className="hidden lg:flex items-center gap-2 px-3">
+                    <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium max-w-[100px] truncate">
+                      {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -157,12 +162,13 @@ const Header = () => {
               </DropdownMenu>
             ) : (
               <Button
-                variant="ghost"
-                size="icon"
-                className="hidden lg:flex"
+                variant="hero"
+                size="sm"
+                className="hidden lg:flex items-center gap-2"
                 onClick={() => navigate('/auth')}
               >
-                <User className="h-5 w-5" />
+                <User className="h-4 w-4" />
+                Sign In
               </Button>
             )}
 
