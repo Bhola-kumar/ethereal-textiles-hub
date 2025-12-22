@@ -365,6 +365,78 @@ export type Database = {
           },
         ]
       }
+      shops: {
+        Row: {
+          address: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
+          banner_url: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          gst_number: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          phone: string | null
+          pincode: string | null
+          seller_id: string
+          shop_name: string
+          shop_slug: string
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          phone?: string | null
+          pincode?: string | null
+          seller_id: string
+          shop_name: string
+          shop_slug: string
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          gst_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          phone?: string | null
+          pincode?: string | null
+          seller_id?: string
+          shop_name?: string
+          shop_slug?: string
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
