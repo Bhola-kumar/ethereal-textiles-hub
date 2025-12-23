@@ -35,7 +35,8 @@ export default function SellerRegister() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasCheckedShop, setHasCheckedShop] = useState(false);
+  const [isCheckingShop, setIsCheckingShop] = useState(true);
+  const [canRegister, setCanRegister] = useState(false);
   const [formData, setFormData] = useState({
     shop_name: '',
     description: '',
@@ -53,7 +54,7 @@ export default function SellerRegister() {
 
   // Redirect logic - only run once after loading completes
   useEffect(() => {
-    if (loading || hasCheckedShop) return;
+    if (loading) return;
 
     const checkAndRedirect = async () => {
       if (!user) {
@@ -79,11 +80,12 @@ export default function SellerRegister() {
         return;
       }
 
-      setHasCheckedShop(true);
+      setCanRegister(true);
+      setIsCheckingShop(false);
     };
 
     checkAndRedirect();
-  }, [user, isSeller, loading, navigate, hasCheckedShop]);
+  }, [user, isSeller, loading, navigate]);
 
   const generateSlug = (name: string) => {
     return name
@@ -153,12 +155,16 @@ export default function SellerRegister() {
     }
   };
 
-  if (loading) {
+  if (loading || isCheckingShop) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
       </div>
     );
+  }
+
+  if (!canRegister) {
+    return null;
   }
 
   return (
