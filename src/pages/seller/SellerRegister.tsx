@@ -55,6 +55,8 @@ export default function SellerRegister() {
   // Redirect logic - only run once after loading completes
   useEffect(() => {
     if (loading) return;
+    
+    let isMounted = true;
 
     const checkAndRedirect = async () => {
       if (!user) {
@@ -68,23 +70,35 @@ export default function SellerRegister() {
         return;
       }
 
-      // Check if user has a shop but role not yet updated
-      const { data: existingShop } = await supabase
-        .from('shops')
-        .select('id')
-        .eq('seller_id', user.id)
-        .maybeSingle();
+      try {
+        // Check if user has a shop but role not yet updated
+        const { data: existingShop } = await supabase
+          .from('shops')
+          .select('id')
+          .eq('seller_id', user.id)
+          .maybeSingle();
 
-      if (existingShop) {
-        navigate('/seller');
-        return;
+        if (!isMounted) return;
+
+        if (existingShop) {
+          navigate('/seller');
+          return;
+        }
+
+        setCanRegister(true);
+        setIsCheckingShop(false);
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Error checking shop:', error);
+        setIsCheckingShop(false);
       }
-
-      setCanRegister(true);
-      setIsCheckingShop(false);
     };
 
     checkAndRedirect();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [user, isSeller, loading, navigate]);
 
   const generateSlug = (name: string) => {
