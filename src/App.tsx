@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Collections from "./pages/Collections";
 import About from "./pages/About";
 import TrackOrder from "./pages/TrackOrder";
+import Checkout from "./pages/Checkout";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -29,6 +30,7 @@ import SellerProducts from "./pages/seller/SellerProducts";
 import SellerOrders from "./pages/seller/SellerOrders";
 import SellerAnalytics from "./pages/seller/SellerAnalytics";
 import SellerShop from "./pages/seller/SellerShop";
+import SellerSettings from "./pages/seller/SellerSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,7 +54,7 @@ const App = () => (
             <Route path="/collections" element={<Collections />} />
             <Route path="/about" element={<About />} />
             <Route path="/track-order" element={<TrackOrder />} />
-            
+            <Route path="/checkout" element={<Checkout />} />
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
@@ -71,6 +73,7 @@ const App = () => (
               <Route path="orders" element={<SellerOrders />} />
               <Route path="analytics" element={<SellerAnalytics />} />
               <Route path="shop" element={<SellerShop />} />
+              <Route path="settings" element={<SellerSettings />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

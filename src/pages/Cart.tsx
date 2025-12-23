@@ -226,10 +226,12 @@ const Cart = () => {
                   </div>
 
                   {/* Checkout Button */}
-                  <Button variant="hero" size="xl" className="w-full">
-                    Proceed to Checkout
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
+                  <Link to="/checkout">
+                    <Button variant="hero" size="xl" className="w-full">
+                      Proceed to Checkout
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
 
                   {/* Continue Shopping */}
                   <Link to="/products" className="block mt-4">

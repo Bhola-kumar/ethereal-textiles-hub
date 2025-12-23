@@ -23,6 +23,7 @@ const navItems = [
   { label: 'Orders', icon: ShoppingCart, href: '/seller/orders' },
   { label: 'Analytics', icon: BarChart3, href: '/seller/analytics' },
   { label: 'Shop Settings', icon: Store, href: '/seller/shop' },
+  { label: 'Payment Settings', icon: Settings, href: '/seller/settings' },
 ];
 
 interface Shop {
