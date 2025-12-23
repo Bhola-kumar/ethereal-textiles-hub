@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings, ShieldCheck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -136,11 +136,29 @@ const Header = () => {
                     </p>
                   </div>
                   <DropdownMenuSeparator />
-                  {(isAdmin || isSeller) && (
+                  {isAdmin && (
                     <>
                       <DropdownMenuItem onClick={() => navigate('/admin')}>
                         <ShieldCheck className="h-4 w-4 mr-2" />
                         Admin Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {isSeller && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/seller')}>
+                        <Store className="h-4 w-4 mr-2" />
+                        Seller Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {!isSeller && !isAdmin && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/seller/register')}>
+                        <Store className="h-4 w-4 mr-2" />
+                        Become a Seller
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
@@ -235,7 +253,7 @@ const Header = () => {
               
               {user ? (
                 <>
-                  {(isAdmin || isSeller) && (
+                  {isAdmin && (
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -248,6 +266,38 @@ const Header = () => {
                       >
                         <ShieldCheck className="h-5 w-5" />
                         Admin Dashboard
+                      </Link>
+                    </motion.div>
+                  )}
+                  {isSeller && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.45 }}
+                    >
+                      <Link
+                        to="/seller"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-lg font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-2"
+                      >
+                        <Store className="h-5 w-5" />
+                        Seller Dashboard
+                      </Link>
+                    </motion.div>
+                  )}
+                  {!isSeller && !isAdmin && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <Link
+                        to="/seller/register"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-lg font-medium text-accent-foreground hover:text-primary transition-colors flex items-center gap-2"
+                      >
+                        <Store className="h-5 w-5" />
+                        Become a Seller
                       </Link>
                     </motion.div>
                   )}
