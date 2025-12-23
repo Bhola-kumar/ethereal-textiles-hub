@@ -400,6 +400,7 @@ export type Database = {
       }
       shops: {
         Row: {
+          accepts_cod: boolean | null
           address: string | null
           bank_account_name: string | null
           bank_account_number: string | null
@@ -414,6 +415,8 @@ export type Database = {
           is_active: boolean | null
           is_verified: boolean | null
           logo_url: string | null
+          payment_instructions: string | null
+          payment_qr_url: string | null
           phone: string | null
           pincode: string | null
           seller_id: string
@@ -421,8 +424,10 @@ export type Database = {
           shop_slug: string
           state: string | null
           updated_at: string
+          upi_id: string | null
         }
         Insert: {
+          accepts_cod?: boolean | null
           address?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
@@ -437,6 +442,8 @@ export type Database = {
           is_active?: boolean | null
           is_verified?: boolean | null
           logo_url?: string | null
+          payment_instructions?: string | null
+          payment_qr_url?: string | null
           phone?: string | null
           pincode?: string | null
           seller_id: string
@@ -444,8 +451,10 @@ export type Database = {
           shop_slug: string
           state?: string | null
           updated_at?: string
+          upi_id?: string | null
         }
         Update: {
+          accepts_cod?: boolean | null
           address?: string | null
           bank_account_name?: string | null
           bank_account_number?: string | null
@@ -460,6 +469,8 @@ export type Database = {
           is_active?: boolean | null
           is_verified?: boolean | null
           logo_url?: string | null
+          payment_instructions?: string | null
+          payment_qr_url?: string | null
           phone?: string | null
           pincode?: string | null
           seller_id?: string
@@ -467,6 +478,7 @@ export type Database = {
           shop_slug?: string
           state?: string | null
           updated_at?: string
+          upi_id?: string | null
         }
         Relationships: []
       }
