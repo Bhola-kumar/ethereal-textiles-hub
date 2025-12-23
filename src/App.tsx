@@ -20,6 +20,13 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCustomers from "./pages/admin/AdminCustomers";
+import SellerRegister from "./pages/seller/SellerRegister";
+import SellerLayout from "./pages/seller/SellerLayout";
+import SellerDashboard from "./pages/seller/SellerDashboard";
+import SellerProducts from "./pages/seller/SellerProducts";
+import SellerOrders from "./pages/seller/SellerOrders";
+import SellerAnalytics from "./pages/seller/SellerAnalytics";
+import SellerShop from "./pages/seller/SellerShop";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +57,16 @@ const App = () => (
               <Route path="products" element={<AdminProducts />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="customers" element={<AdminCustomers />} />
+            </Route>
+            
+            {/* Seller Routes */}
+            <Route path="/seller/register" element={<SellerRegister />} />
+            <Route path="/seller" element={<SellerLayout />}>
+              <Route index element={<SellerDashboard />} />
+              <Route path="products" element={<SellerProducts />} />
+              <Route path="orders" element={<SellerOrders />} />
+              <Route path="analytics" element={<SellerAnalytics />} />
+              <Route path="shop" element={<SellerShop />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
