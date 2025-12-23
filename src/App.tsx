@@ -14,12 +14,14 @@ import MyOrders from "./pages/MyOrders";
 import Settings from "./pages/Settings";
 import Collections from "./pages/Collections";
 import About from "./pages/About";
+import TrackOrder from "./pages/TrackOrder";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCustomers from "./pages/admin/AdminCustomers";
+import AdminSellers from "./pages/admin/AdminSellers";
 import SellerRegister from "./pages/seller/SellerRegister";
 import SellerLayout from "./pages/seller/SellerLayout";
 import SellerDashboard from "./pages/seller/SellerDashboard";
@@ -49,6 +51,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/about" element={<About />} />
+            <Route path="/track-order" element={<TrackOrder />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
@@ -57,6 +60,7 @@ const App = () => (
               <Route path="products" element={<AdminProducts />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="customers" element={<AdminCustomers />} />
+              <Route path="sellers" element={<AdminSellers />} />
             </Route>
             
             {/* Seller Routes */}

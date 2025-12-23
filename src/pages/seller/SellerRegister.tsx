@@ -52,6 +52,28 @@ export default function SellerRegister() {
     }
   }, [user, isSeller, loading, navigate]);
 
+  // Check if user already has a shop (handles unique constraint error)
+  useEffect(() => {
+    const checkExistingShop = async () => {
+      if (!user) return;
+      
+      const { data: existingShop } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('seller_id', user.id)
+        .maybeSingle();
+      
+      if (existingShop) {
+        toast.info('You already have a registered shop');
+        navigate('/seller');
+      }
+    };
+    
+    if (!loading && user && !isSeller) {
+      checkExistingShop();
+    }
+  }, [user, loading, isSeller, navigate]);
+
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings, ShieldCheck, Store } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings, ShieldCheck, Store, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cartStore';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -67,6 +68,17 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2 lg:gap-4">
+            {/* Track Order */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/track-order')}
+              className="relative hidden sm:flex"
+              title="Track Order"
+            >
+              <MapPin className="h-5 w-5" />
+            </Button>
+
             {/* Search */}
             <Button
               variant="ghost"
@@ -114,6 +126,9 @@ const Header = () => {
                 </motion.span>
               )}
             </Button>
+
+            {/* Notifications */}
+            {user && <NotificationDropdown />}
 
             {/* User Menu */}
             {user ? (

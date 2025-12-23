@@ -8,7 +8,8 @@ import {
   BarChart3, 
   Users,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Store
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { label: 'Products', icon: Package, href: '/admin/products' },
   { label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
+  { label: 'Sellers', icon: Store, href: '/admin/sellers' },
   { label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
   { label: 'Customers', icon: Users, href: '/admin/customers' },
 ];
