@@ -2,8 +2,11 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Heart, Leaf, Users, Award, MapPin, History } from "lucide-react";
+import { usePlatformStats } from "@/hooks/usePlatformStats";
 
 const About = () => {
+  const { data: platformStats } = usePlatformStats();
+
   const values = [
     {
       icon: Heart,
@@ -27,12 +30,26 @@ const About = () => {
     },
   ];
 
+  // Dynamic stats from database
+  const heroStats = [
+    { 
+      value: platformStats?.totalShops ? `${platformStats.totalShops}+` : '0', 
+      label: 'Seller Shops' 
+    },
+    { 
+      value: platformStats?.totalProducts ? `${platformStats.totalProducts}+` : '0', 
+      label: 'Products' 
+    },
+    { 
+      value: platformStats?.totalOrders ? `${platformStats.totalOrders}+` : '0', 
+      label: 'Orders Completed' 
+    },
+  ];
+
   const milestones = [
-    { year: "2018", title: "Founded", description: "Started with 5 artisan families in rural Bengal" },
-    { year: "2019", title: "First 1000 Orders", description: "Reached our first milestone of customer trust" },
-    { year: "2021", title: "Pan-India Delivery", description: "Expanded to deliver across all states" },
-    { year: "2023", title: "International Shipping", description: "Now shipping to 15+ countries worldwide" },
-    { year: "2024", title: "500+ Artisans", description: "Growing community of skilled weavers" },
+    { year: "2024", title: "Platform Launch", description: "Launched as a marketplace connecting artisans and customers" },
+    { year: "2024", title: "First Sellers", description: "Onboarded our first seller partners from Bengal" },
+    { year: "2025", title: "Growing Community", description: "Expanding our network of traditional weavers" },
   ];
 
   return (
@@ -57,18 +74,12 @@ const About = () => {
                 across India.
               </p>
               <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">500+</div>
-                  <div className="text-sm text-muted-foreground">Artisans</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">50K+</div>
-                  <div className="text-sm text-muted-foreground">Happy Customers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">15+</div>
-                  <div className="text-sm text-muted-foreground">Countries</div>
-                </div>
+                {heroStats.map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <div className="text-3xl font-bold text-primary">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </div>
+                ))}
               </div>
             </motion.div>
             <motion.div
@@ -109,14 +120,15 @@ const About = () => {
                 and even a symbol of respect when offered as a gift.
               </p>
               <p>
-                We started this journey in 2018 when we visited a small weaving village in 
-                Shantipur, West Bengal. We saw master weavers struggling to find markets for 
-                their exquisite handwoven gamchhas, as machine-made alternatives flooded the market.
+                Gamchha Dukaan is a marketplace that connects traditional weavers directly with 
+                customers who appreciate authentic, handmade textiles. We provide a platform for 
+                artisan sellers from weaving communities across Bengal, Assam, and other regions 
+                to showcase their craft.
               </p>
               <p>
-                Today, we work with over 500 artisan families across Bengal, Assam, Bihar, 
-                and Odisha—helping them preserve their ancestral craft while reaching customers 
-                who appreciate authentic, handmade textiles.
+                Our mission is to preserve the rich textile heritage of India by enabling 
+                artisans to reach a wider audience while ensuring customers receive genuine, 
+                handwoven products directly from the source.
               </p>
             </div>
           </div>
