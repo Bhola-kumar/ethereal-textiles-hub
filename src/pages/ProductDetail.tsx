@@ -1,44 +1,101 @@
 import { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Truck, Shield, RefreshCw, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Truck, Shield, RefreshCw, Minus, Plus, ChevronLeft, ChevronRight, Store, BadgeCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { products } from '@/data/products';
+import { usePublicProduct, usePublicProducts } from '@/hooks/usePublicProducts';
 import { useCartStore } from '@/store/cartStore';
 import ProductCard from '@/components/product/ProductCard';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
+import SellerPaymentInfo from '@/components/product/SellerPaymentInfo';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const product = products.find((p) => p.id === id);
+  const { data: product, isLoading, error } = usePublicProduct(id || '');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, isInCart } = useCartStore();
 
-  if (!product) {
+  // Fetch related products (same category)
+  const { data: allProducts = [] } = usePublicProducts({ category: product?.category_id || undefined });
+  const relatedProducts = allProducts.filter(p => p.id !== product?.id).slice(0, 4);
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-display font-bold mb-4">Product Not Found</h1>
-          <Link to="/products">
-            <Button variant="hero">Back to Shop</Button>
-          </Link>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-20 lg:pt-24">
+          <div className="container mx-auto px-4 py-8">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
+              <Skeleton className="aspect-square rounded-2xl" />
+              <div className="space-y-6">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-12 w-3/4" />
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <h1 className="text-2xl font-display font-bold mb-4">Product Not Found</h1>
+            <p className="text-muted-foreground mb-6">This product may no longer be available or the shop is inactive.</p>
+            <Link to="/products">
+              <Button variant="hero">Back to Shop</Button>
+            </Link>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   const inWishlist = isInWishlist(product.id);
   const inCart = isInCart(product.id);
-  const productImages = product.images || [product.image];
+  const productImages = product.images?.length ? product.images : ['https://images.pexels.com/photos/6044266/pexels-photo-6044266.jpeg?auto=compress&cs=tinysrgb&w=800'];
 
   const handleAddToCart = () => {
+    const cartProduct = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.original_price || undefined,
+      image: productImages[0],
+      images: product.images || undefined,
+      category: product.categories?.name || 'Uncategorized',
+      fabric: product.fabric || undefined,
+      color: product.color || undefined,
+      pattern: product.pattern || undefined,
+      description: product.description || '',
+      rating: product.rating || 0,
+      reviews: product.reviews_count || 0,
+      isNew: product.is_new || false,
+      isTrending: product.is_trending || false,
+      inStock: (product.stock || 0) > 0,
+      care: product.care_instructions || [],
+      shop_name: product.shop_name || undefined,
+      shop_slug: product.shop_slug || undefined,
+      shop_is_verified: product.shop_is_verified || undefined,
+    };
+    
     for (let i = 0; i < quantity; i++) {
-      addToCart(product);
+      addToCart(cartProduct);
     }
     toast.success(`Added ${quantity} item(s) to cart`, {
       description: product.name,
@@ -46,28 +103,45 @@ const ProductDetail = () => {
   };
 
   const handleWishlistToggle = () => {
+    const wishlistProduct = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.original_price || undefined,
+      image: productImages[0],
+      category: product.categories?.name || 'Uncategorized',
+      fabric: product.fabric || undefined,
+      color: product.color || undefined,
+      pattern: product.pattern || undefined,
+      description: product.description || '',
+      rating: product.rating || 0,
+      reviews: product.reviews_count || 0,
+      isNew: product.is_new || false,
+      isTrending: product.is_trending || false,
+      inStock: (product.stock || 0) > 0,
+      care: product.care_instructions || [],
+    };
+    
     if (inWishlist) {
       removeFromWishlist(product.id);
       toast.info('Removed from wishlist');
     } else {
-      addToWishlist(product);
+      addToWishlist(wishlistProduct);
       toast.success('Added to wishlist');
     }
   };
 
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = product.original_price
+    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
-
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
 
   const features = [
     { icon: Truck, title: 'Free Shipping', description: 'On orders above ₹999' },
     { icon: Shield, title: 'Secure Payment', description: '100% secure checkout' },
     { icon: RefreshCw, title: 'Easy Returns', description: '7 days return policy' },
   ];
+
+  const inStock = (product.stock || 0) > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,10 +154,14 @@ const ProductDetail = () => {
             <Link to="/" className="hover:text-primary transition-colors">Home</Link>
             <span>/</span>
             <Link to="/products" className="hover:text-primary transition-colors">Shop</Link>
-            <span>/</span>
-            <Link to={`/products?category=${product.category.toLowerCase()}`} className="hover:text-primary transition-colors">
-              {product.category}
-            </Link>
+            {product.categories && (
+              <>
+                <span>/</span>
+                <Link to={`/products?category=${product.category_id}`} className="hover:text-primary transition-colors">
+                  {product.categories.name}
+                </Link>
+              </>
+            )}
             <span>/</span>
             <span className="text-foreground">{product.name}</span>
           </nav>
@@ -131,12 +209,12 @@ const ProductDetail = () => {
 
                 {/* Badges */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
-                  {product.isNew && (
+                  {product.is_new && (
                     <span className="px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg">
                       NEW
                     </span>
                   )}
-                  {product.isTrending && (
+                  {product.is_trending && (
                     <span className="px-3 py-1.5 bg-destructive text-destructive-foreground text-sm font-medium rounded-lg">
                       TRENDING
                     </span>
@@ -180,6 +258,20 @@ const ProductDetail = () => {
               transition={{ delay: 0.2 }}
               className="space-y-6"
             >
+              {/* Shop Info */}
+              {product.shop_name && (
+                <Link 
+                  to={`/shop/${product.shop_slug}`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/50 hover:bg-secondary rounded-full transition-colors"
+                >
+                  <Store className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{product.shop_name}</span>
+                  {product.shop_is_verified && (
+                    <BadgeCheck className="h-4 w-4 text-primary" />
+                  )}
+                </Link>
+              )}
+
               {/* Rating */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
@@ -187,15 +279,15 @@ const ProductDetail = () => {
                     <Star
                       key={i}
                       className={`h-4 w-4 ${
-                        i < Math.floor(product.rating)
+                        i < Math.floor(product.rating || 0)
                           ? 'fill-primary text-primary'
                           : 'fill-muted text-muted'
                       }`}
                     />
                   ))}
                 </div>
-                <span className="font-medium">{product.rating}</span>
-                <span className="text-muted-foreground">({product.reviews} reviews)</span>
+                <span className="font-medium">{product.rating || 0}</span>
+                <span className="text-muted-foreground">({product.reviews_count || 0} reviews)</span>
               </div>
 
               {/* Title */}
@@ -204,7 +296,7 @@ const ProductDetail = () => {
                   {product.name}
                 </h1>
                 <p className="text-muted-foreground">
-                  {product.fabric} • {product.pattern} • {product.color}
+                  {[product.fabric, product.pattern, product.color].filter(Boolean).join(' • ')}
                 </p>
               </div>
 
@@ -213,32 +305,34 @@ const ProductDetail = () => {
                 <span className="text-3xl font-bold gradient-text">
                   ₹{product.price.toLocaleString()}
                 </span>
-                {product.originalPrice && (
+                {product.original_price && (
                   <>
                     <span className="text-xl text-muted-foreground line-through">
-                      ₹{product.originalPrice.toLocaleString()}
+                      ₹{product.original_price.toLocaleString()}
                     </span>
                     <span className="text-green-500 font-medium">
-                      Save ₹{(product.originalPrice - product.price).toLocaleString()}
+                      Save ₹{(product.original_price - product.price).toLocaleString()}
                     </span>
                   </>
                 )}
               </div>
 
               {/* Description */}
-              <p className="text-muted-foreground leading-relaxed">
-                {product.description}
-              </p>
+              {product.description && (
+                <p className="text-muted-foreground leading-relaxed">
+                  {product.description}
+                </p>
+              )}
 
               {/* Stock Status */}
               <div className="flex items-center gap-2">
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    product.inStock ? 'bg-green-500' : 'bg-destructive'
+                    inStock ? 'bg-green-500' : 'bg-destructive'
                   }`}
                 />
-                <span className={product.inStock ? 'text-green-500' : 'text-destructive'}>
-                  {product.inStock ? 'In Stock' : 'Out of Stock'}
+                <span className={inStock ? 'text-green-500' : 'text-destructive'}>
+                  {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
                 </span>
               </div>
 
@@ -260,7 +354,8 @@ const ProductDetail = () => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(Math.min(product.stock || 1, quantity + 1))}
+                    disabled={quantity >= (product.stock || 1)}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -274,7 +369,7 @@ const ProductDetail = () => {
                   size="xl"
                   className="flex-1"
                   onClick={handleAddToCart}
-                  disabled={!product.inStock}
+                  disabled={!inStock}
                 >
                   <ShoppingBag className="h-5 w-5" />
                   {inCart ? 'Add More' : 'Add to Cart'}
@@ -288,6 +383,13 @@ const ProductDetail = () => {
                 </Button>
               </div>
 
+              {/* Seller Payment Info */}
+              <SellerPaymentInfo 
+                sellerId={product.seller_id} 
+                shopName={product.shop_name}
+                shopIsVerified={product.shop_is_verified}
+              />
+
               {/* Features */}
               <div className="grid grid-cols-3 gap-4 pt-6 border-t border-border/50">
                 {features.map((feature) => (
@@ -300,17 +402,19 @@ const ProductDetail = () => {
               </div>
 
               {/* Care Instructions */}
-              <div className="pt-6 border-t border-border/50">
-                <h3 className="font-display font-semibold mb-3">Care Instructions</h3>
-                <ul className="space-y-2">
-                  {product.care.map((instruction, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      {instruction}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {product.care_instructions && product.care_instructions.length > 0 && (
+                <div className="pt-6 border-t border-border/50">
+                  <h3 className="font-display font-semibold mb-3">Care Instructions</h3>
+                  <ul className="space-y-2">
+                    {product.care_instructions.map((instruction, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        {instruction}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </motion.div>
           </div>
         </section>
@@ -329,8 +433,8 @@ const ProductDetail = () => {
               </motion.h2>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                {relatedProducts.map((product, index) => (
-                  <ProductCard key={product.id} product={product} index={index} />
+                {relatedProducts.map((relatedProduct, index) => (
+                  <ProductCard key={relatedProduct.id} product={relatedProduct} index={index} />
                 ))}
               </div>
             </div>
