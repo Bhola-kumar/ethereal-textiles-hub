@@ -55,7 +55,7 @@ export default function SellerRegister() {
   // Redirect logic - only run once after loading completes
   useEffect(() => {
     if (loading) return;
-    
+
     let isMounted = true;
 
     const checkAndRedirect = async () => {
@@ -95,7 +95,7 @@ export default function SellerRegister() {
     };
 
     checkAndRedirect();
-    
+
     return () => {
       isMounted = false;
     };
@@ -111,7 +111,7 @@ export default function SellerRegister() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const result = shopSchema.safeParse(formData);
     if (!result.success) {
       const error = result.error.errors[0];
@@ -157,7 +157,7 @@ export default function SellerRegister() {
 
       toast.success('Shop registered successfully!');
       setStep(4);
-      
+
       // Refresh session to get new role
       setTimeout(() => {
         window.location.href = '/seller';
@@ -212,9 +212,8 @@ export default function SellerRegister() {
             <div className="flex items-center justify-center gap-4 mb-8">
               {[1, 2, 3, 4].map((s) => (
                 <div key={s} className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                    }`}>
                     {step > s ? <CheckCircle className="h-5 w-5" /> : s}
                   </div>
                   {s < 4 && <div className={`w-12 h-0.5 ${step > s ? 'bg-primary' : 'bg-muted'}`} />}
@@ -368,7 +367,7 @@ export default function SellerRegister() {
                             <strong className="text-foreground">Direct Payments:</strong> Customers will pay you directly using these methods. No commission is taken by the platform.
                           </p>
                         </div>
-                        
+
                         <div>
                           <Label>UPI ID</Label>
                           <Input
