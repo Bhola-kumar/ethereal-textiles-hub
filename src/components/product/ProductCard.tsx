@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Eye } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Eye, Store, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCartStore, Product } from '@/store/cartStore';
+import { 
+  useCartStore, 
+  Product, 
+  getProductImage, 
+  isProductInStock, 
+  getOriginalPrice,
+  isProductNew,
+  isProductTrending,
+  getReviewsCount 
+} from '@/store/cartStore';
 import { toast } from 'sonner';
 
 interface ProductCardProps {
@@ -17,6 +26,12 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
   const inWishlist = isInWishlist(product.id);
   const inCart = isInCart(product.id);
+  const productImage = getProductImage(product);
+  const inStock = isProductInStock(product);
+  const originalPrice = getOriginalPrice(product);
+  const isNew = isProductNew(product);
+  const isTrending = isProductTrending(product);
+  const reviewsCount = getReviewsCount(product);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,9 +56,12 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     }
   };
 
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = originalPrice
+    ? Math.round(((originalPrice - product.price) / originalPrice) * 100)
     : 0;
+
+  // Use slug for product link, fallback to id
+  const productLink = `/product/${product.slug || product.id}`;
 
   return (
     <motion.div
@@ -54,12 +72,12 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link to={`/product/${product.id}`}>
+      <Link to={productLink}>
         <div className="relative overflow-hidden rounded-xl bg-card border border-border/50 transition-all duration-500 hover:border-primary/30 hover:shadow-card-hover">
           {/* Image Container */}
           <div className="relative aspect-[3/4] overflow-hidden">
             <motion.img
-              src={product.image}
+              src={productImage}
               alt={product.name}
               className="w-full h-full object-cover"
               animate={{ scale: isHovered ? 1.08 : 1 }}
@@ -75,12 +93,12 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-2">
-              {product.isNew && (
+              {isNew && (
                 <span className="px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-md">
                   NEW
                 </span>
               )}
-              {product.isTrending && (
+              {isTrending && (
                 <span className="px-2 py-1 bg-destructive text-destructive-foreground text-xs font-medium rounded-md">
                   TRENDING
                 </span>
@@ -117,7 +135,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 className="h-9 w-9"
                 asChild
               >
-                <Link to={`/product/${product.id}`} onClick={(e) => e.stopPropagation()}>
+                <Link to={productLink} onClick={(e) => e.stopPropagation()}>
                   <Eye className="h-4 w-4" />
                 </Link>
               </Button>
@@ -134,21 +152,32 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 variant={inCart ? 'secondary' : 'hero'}
                 className="w-full"
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
+                disabled={!inStock}
               >
                 <ShoppingBag className="h-4 w-4 mr-2" />
-                {!product.inStock ? 'Out of Stock' : inCart ? 'Add More' : 'Add to Cart'}
+                {!inStock ? 'Out of Stock' : inCart ? 'Add More' : 'Add to Cart'}
               </Button>
             </motion.div>
           </div>
 
           {/* Product Info */}
           <div className="p-4">
+            {/* Shop Info */}
+            {product.shop_name && (
+              <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
+                <Store className="h-3 w-3" />
+                <span className="truncate">{product.shop_name}</span>
+                {product.shop_is_verified && (
+                  <CheckCircle className="h-3 w-3 text-primary flex-shrink-0" />
+                )}
+              </div>
+            )}
+
             <div className="flex items-center gap-1 mb-2">
               <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-              <span className="text-sm font-medium">{product.rating}</span>
+              <span className="text-sm font-medium">{product.rating || 0}</span>
               <span className="text-xs text-muted-foreground">
-                ({product.reviews} reviews)
+                ({reviewsCount} reviews)
               </span>
             </div>
 
@@ -157,16 +186,16 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             </h3>
 
             <p className="text-xs text-muted-foreground mb-3">
-              {product.fabric} • {product.pattern}
+              {product.fabric || 'Cotton'} • {product.pattern || 'Classic'}
             </p>
 
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-primary">
                 ₹{product.price.toLocaleString()}
               </span>
-              {product.originalPrice && (
+              {originalPrice && (
                 <span className="text-sm text-muted-foreground line-through">
-                  ₹{product.originalPrice.toLocaleString()}
+                  ₹{originalPrice.toLocaleString()}
                 </span>
               )}
             </div>

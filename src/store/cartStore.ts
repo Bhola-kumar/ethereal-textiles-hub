@@ -5,20 +5,33 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  originalPrice?: number;
-  image: string;
-  images?: string[];
-  category: string;
-  fabric: string;
-  color: string;
-  pattern: string;
-  rating: number;
-  reviews: number;
-  description: string;
-  care: string[];
-  inStock: boolean;
+  original_price?: number | null;
+  originalPrice?: number; // For backward compatibility
+  image?: string;
+  images?: string[] | null;
+  category?: string;
+  category_id?: string | null;
+  fabric?: string | null;
+  color?: string | null;
+  pattern?: string | null;
+  rating?: number | null;
+  reviews?: number;
+  reviews_count?: number | null;
+  description?: string | null;
+  care?: string[];
+  care_instructions?: string[] | null;
+  inStock?: boolean;
+  stock?: number | null;
+  is_new?: boolean | null;
   isNew?: boolean;
+  is_trending?: boolean | null;
   isTrending?: boolean;
+  slug?: string;
+  seller_id?: string | null;
+  shop_name?: string;
+  shop_slug?: string;
+  shop_logo_url?: string | null;
+  shop_is_verified?: boolean;
 }
 
 export interface CartItem extends Product {
@@ -26,6 +39,45 @@ export interface CartItem extends Product {
 }
 
 export interface WishlistItem extends Product {}
+
+// Helper to get the main image from a product
+export const getProductImage = (product: Product): string => {
+  if (product.image) return product.image;
+  if (product.images && product.images.length > 0) return product.images[0];
+  return '/placeholder.svg';
+};
+
+// Helper to check if product is in stock
+export const isProductInStock = (product: Product): boolean => {
+  if (typeof product.inStock === 'boolean') return product.inStock;
+  if (typeof product.stock === 'number') return product.stock > 0;
+  return true;
+};
+
+// Helper to get original price
+export const getOriginalPrice = (product: Product): number | undefined => {
+  return product.originalPrice || product.original_price || undefined;
+};
+
+// Helper to check if new
+export const isProductNew = (product: Product): boolean => {
+  return product.isNew || product.is_new || false;
+};
+
+// Helper to check if trending
+export const isProductTrending = (product: Product): boolean => {
+  return product.isTrending || product.is_trending || false;
+};
+
+// Helper to get reviews count
+export const getReviewsCount = (product: Product): number => {
+  return product.reviews || product.reviews_count || 0;
+};
+
+// Helper to get care instructions
+export const getCareInstructions = (product: Product): string[] => {
+  return product.care || product.care_instructions || [];
+};
 
 interface CartStore {
   items: CartItem[];

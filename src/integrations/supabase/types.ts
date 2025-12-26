@@ -89,6 +89,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_shop"
+            referencedColumns: ["id"]
+          },
         ]
       }
       categories: {
@@ -195,6 +202,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_shop"
             referencedColumns: ["id"]
           },
         ]
@@ -396,6 +410,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_shop"
+            referencedColumns: ["id"]
+          },
         ]
       }
       shops: {
@@ -530,10 +551,58 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wishlists_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_shop"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
+      products_with_shop: {
+        Row: {
+          care_instructions: string[] | null
+          category_id: string | null
+          color: string | null
+          created_at: string | null
+          description: string | null
+          fabric: string | null
+          id: string | null
+          images: string[] | null
+          is_new: boolean | null
+          is_published: boolean | null
+          is_trending: boolean | null
+          name: string | null
+          original_price: number | null
+          pattern: string | null
+          price: number | null
+          rating: number | null
+          reviews_count: number | null
+          seller_id: string | null
+          shop_city: string | null
+          shop_id: string | null
+          shop_is_verified: boolean | null
+          shop_logo_url: string | null
+          shop_name: string | null
+          shop_slug: string | null
+          shop_state: string | null
+          slug: string | null
+          stock: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops_public: {
         Row: {
           banner_url: string | null
