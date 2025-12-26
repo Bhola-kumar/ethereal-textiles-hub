@@ -72,16 +72,34 @@ export default function SellerRegister() {
 
       try {
         // Check if user has a shop but role not yet updated
-        const { data: existingShop } = await supabase
+        const { data: existingShop, error: existingShopError } = await supabase
           .from('shops')
           .select('id')
           .eq('seller_id', user.id)
           .maybeSingle();
 
+        if (existingShopError) throw existingShopError;
         if (!isMounted) return;
 
         if (existingShop) {
-          navigate('/seller');
+          // Legacy/partial registration fix:
+          // shop exists but user_roles might not have been created.
+          const { error: upsertRoleError } = await supabase
+            .from('user_roles')
+            .upsert(
+              {
+                user_id: user.id,
+                role: 'seller',
+              },
+              { onConflict: 'user_id,role', ignoreDuplicates: true }
+            );
+
+          if (upsertRoleError && !upsertRoleError.message?.toLowerCase().includes('duplicate')) {
+            throw upsertRoleError;
+          }
+
+          toast.success('Seller account found. Redirecting to your dashboard...');
+          window.location.href = '/seller';
           return;
         }
 
@@ -90,6 +108,7 @@ export default function SellerRegister() {
       } catch (error) {
         if (!isMounted) return;
         console.error('Error checking shop:', error);
+        toast.error('Unable to verify seller status. Please reload and try again.');
         setIsCheckingShop(false);
       }
     };
