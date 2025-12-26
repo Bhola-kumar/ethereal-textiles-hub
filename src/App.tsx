@@ -24,6 +24,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminSellers from "./pages/admin/AdminSellers";
 import AdminFeaturedProducts from "./pages/admin/AdminFeaturedProducts";
+import AdminCategories from "./pages/admin/AdminCategories";
 import SellerRegister from "./pages/seller/SellerRegister";
 import SellerLayout from "./pages/seller/SellerLayout";
 import SellerDashboard from "./pages/seller/SellerDashboard";
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="sellers" element={<AdminSellers />} />
               <Route path="featured" element={<AdminFeaturedProducts />} />
+              <Route path="categories" element={<AdminCategories />} />
             </Route>
             
             {/* Seller Routes */}

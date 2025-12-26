@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -33,8 +34,8 @@ import {
   Clock, 
   CheckCircle, 
   XCircle,
-  Calendar,
-  ArrowUpDown,
+  X,
+  Save,
   Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -96,7 +97,7 @@ export default function AdminFeaturedProducts() {
   const [allProducts, setAllProducts] = useState<ProductForSelection[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<FeatureRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
@@ -107,6 +108,7 @@ export default function AdminFeaturedProducts() {
   const [endDate, setEndDate] = useState('');
   const [displayOrder, setDisplayOrder] = useState('0');
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -203,31 +205,36 @@ export default function AdminFeaturedProducts() {
       return;
     }
 
-    const { error } = await supabase
-      .from('featured_products')
-      .insert({
-        product_id: selectedProductId,
-        added_by: user!.id,
-        start_date: startDate || new Date().toISOString(),
-        end_date: endDate || null,
-        display_order: parseInt(displayOrder) || 0,
-        notes: notes || null,
-        is_active: true
-      });
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('featured_products')
+        .insert({
+          product_id: selectedProductId,
+          added_by: user!.id,
+          start_date: startDate || new Date().toISOString(),
+          end_date: endDate || null,
+          display_order: parseInt(displayOrder) || 0,
+          notes: notes || null,
+          is_active: true
+        });
 
-    if (error) {
-      if (error.code === '23505') {
-        toast.error('This product is already featured');
-      } else {
-        toast.error('Failed to add featured product');
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('This product is already featured');
+        } else {
+          toast.error('Failed to add featured product');
+        }
+        return;
       }
-      return;
-    }
 
-    toast.success('Product added to featured list');
-    setShowAddDialog(false);
-    resetForm();
-    fetchFeaturedProducts();
+      toast.success('Product added to featured list');
+      setShowForm(false);
+      resetForm();
+      fetchFeaturedProducts();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRemoveFeaturedProduct = async (id: string) => {
@@ -395,6 +402,11 @@ export default function AdminFeaturedProducts() {
     setNotes('');
   };
 
+  const handleCloseForm = () => {
+    setShowForm(false);
+    resetForm();
+  };
+
   const pendingRequests = featureRequests.filter(r => r.status === 'pending');
   const processedRequests = featureRequests.filter(r => r.status !== 'pending');
 
@@ -425,125 +437,126 @@ export default function AdminFeaturedProducts() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-display font-bold">Featured Products</h1>
-          <p className="text-muted-foreground">Manage featured products and review seller requests</p>
+    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-6 p-4 lg:p-6">
+      {/* Left Panel - Featured Products & Requests */}
+      <motion.div 
+        className={`flex-1 flex flex-col min-w-0 ${showForm ? 'hidden lg:flex' : 'flex'}`}
+        initial={{ opacity: 0, x: -20 }} 
+        animate={{ opacity: 1, x: 0 }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">Featured Products</h1>
+            <p className="text-muted-foreground text-sm">Manage featured products and review seller requests</p>
+          </div>
+          <Button variant="hero" onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />Add Featured
+          </Button>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Featured Product
-        </Button>
-      </div>
 
-      <Tabs defaultValue="featured" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="featured" className="gap-2">
-            <Star className="h-4 w-4" />
-            Featured Products ({featuredProducts.length})
-          </TabsTrigger>
-          <TabsTrigger value="requests" className="gap-2">
-            <Clock className="h-4 w-4" />
-            Seller Requests 
-            {pendingRequests.length > 0 && (
-              <Badge variant="destructive" className="ml-1">{pendingRequests.length}</Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="featured">
-          <Card>
-            <CardHeader>
-              <CardTitle>Currently Featured</CardTitle>
-              <CardDescription>Products displayed in the featured section on the homepage</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {featuredProducts.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No featured products yet.</p>
-                  <p className="text-sm">Add products to display them on the homepage.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Shop</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Order</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {featuredProducts.map((fp) => (
-                      <TableRow key={fp.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            {fp.product?.images?.[0] && (
-                              <img 
-                                src={fp.product.images[0]} 
-                                alt={fp.product.name}
-                                className="h-12 w-12 rounded-lg object-cover"
-                              />
-                            )}
-                            <div>
-                              <p className="font-medium">{fp.product?.name || 'Unknown Product'}</p>
-                              <p className="text-sm text-muted-foreground">₹{fp.product?.price}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{fp.product?.shop_name || '-'}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <p>From: {format(new Date(fp.start_date), 'MMM dd, yyyy')}</p>
-                            {fp.end_date ? (
-                              <p className="text-muted-foreground">To: {format(new Date(fp.end_date), 'MMM dd, yyyy')}</p>
-                            ) : (
-                              <p className="text-muted-foreground">No end date</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{fp.display_order}</TableCell>
-                        <TableCell>
-                          <Switch 
-                            checked={fp.is_active}
-                            onCheckedChange={() => handleToggleActive(fp.id, fp.is_active)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleRemoveFeaturedProduct(fp.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+        <Tabs defaultValue="featured" className="flex-1 flex flex-col">
+          <TabsList className="mb-4">
+            <TabsTrigger value="featured" className="gap-2">
+              <Star className="h-4 w-4" />
+              Featured ({featuredProducts.length})
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="gap-2">
+              <Clock className="h-4 w-4" />
+              Requests 
+              {pendingRequests.length > 0 && (
+                <Badge variant="destructive" className="ml-1">{pendingRequests.length}</Badge>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="requests">
-          <div className="space-y-6">
+          <TabsContent value="featured" className="flex-1 mt-0">
+            <Card className="h-full bg-card border-border/50 overflow-hidden">
+              <CardContent className="p-0 h-full">
+                {featuredProducts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No featured products yet.</p>
+                    <p className="text-sm">Add products to display them on the homepage.</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-full">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Shop</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Order</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {featuredProducts.map((fp) => (
+                          <TableRow key={fp.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {fp.product?.images?.[0] && (
+                                  <img 
+                                    src={fp.product.images[0]} 
+                                    alt={fp.product.name}
+                                    className="h-12 w-12 rounded-lg object-cover"
+                                  />
+                                )}
+                                <div>
+                                  <p className="font-medium">{fp.product?.name || 'Unknown Product'}</p>
+                                  <p className="text-sm text-muted-foreground">₹{fp.product?.price}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{fp.product?.shop_name || '-'}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <p>From: {format(new Date(fp.start_date), 'MMM dd, yyyy')}</p>
+                                {fp.end_date ? (
+                                  <p className="text-muted-foreground">To: {format(new Date(fp.end_date), 'MMM dd, yyyy')}</p>
+                                ) : (
+                                  <p className="text-muted-foreground">No end date</p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{fp.display_order}</TableCell>
+                            <TableCell>
+                              <Switch 
+                                checked={fp.is_active}
+                                onCheckedChange={() => handleToggleActive(fp.id, fp.is_active)}
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleRemoveFeaturedProduct(fp.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="requests" className="flex-1 mt-0 space-y-4 overflow-auto">
             {/* Pending Requests */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="py-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Clock className="h-5 w-5 text-yellow-500" />
                   Pending Requests ({pendingRequests.length})
                 </CardTitle>
-                <CardDescription>Seller requests awaiting your review</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 {pendingRequests.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground">No pending requests</p>
                 ) : (
@@ -608,11 +621,10 @@ export default function AdminFeaturedProducts() {
             {/* Processed Requests */}
             {processedRequests.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Request History</CardTitle>
-                  <CardDescription>Previously reviewed requests</CardDescription>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-lg">Request History</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -645,111 +657,152 @@ export default function AdminFeaturedProducts() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
 
-      {/* Add Featured Product Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Featured Product</DialogTitle>
-            <DialogDescription>
-              Select a product to feature on the homepage
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label>Search Products</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by product or shop name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="max-h-[200px] overflow-y-auto border rounded-lg">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-accent transition-colors ${
-                    selectedProductId === product.id ? 'bg-primary/10 border-l-2 border-primary' : ''
-                  }`}
-                  onClick={() => setSelectedProductId(product.id)}
-                >
-                  {product.images?.[0] && (
-                    <img 
-                      src={product.images[0]} 
-                      alt={product.name}
-                      className="h-10 w-10 rounded object-cover"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">{product.shop_name} • ₹{product.price}</p>
-                  </div>
-                  {selectedProductId === product.id && (
-                    <CheckCircle className="h-5 w-5 text-primary" />
-                  )}
+      {/* Right Panel - Add Featured Product Form */}
+      <AnimatePresence mode="wait">
+        {showForm && (
+          <motion.div
+            className="w-full lg:w-[480px] xl:w-[520px] flex-shrink-0"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          >
+            <Card className="h-full bg-card border-border/50 flex flex-col">
+              <CardHeader className="flex-shrink-0 border-b border-border/50 py-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-display">Add Featured Product</CardTitle>
+                  <Button variant="ghost" size="icon" onClick={handleCloseForm}>
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
-              ))}
-            </div>
+                <CardDescription>Select a product to feature on the homepage</CardDescription>
+              </CardHeader>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Start Date</Label>
-                <Input
-                  type="datetime-local"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>End Date (Optional)</Label>
-                <Input
-                  type="datetime-local"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-            </div>
+              <ScrollArea className="flex-1">
+                <div className="p-6 space-y-6">
+                  {/* Search Products */}
+                  <div className="space-y-2">
+                    <Label>Search Products</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by product or shop name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
 
-            <div>
-              <Label>Display Order</Label>
-              <Input
-                type="number"
-                value={displayOrder}
-                onChange={(e) => setDisplayOrder(e.target.value)}
-                placeholder="0"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Lower numbers appear first</p>
-            </div>
+                  {/* Product Selection */}
+                  <div className="space-y-2">
+                    <Label>Select Product *</Label>
+                    <div className="max-h-[200px] overflow-y-auto border rounded-lg">
+                      {filteredProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-accent transition-colors ${
+                            selectedProductId === product.id ? 'bg-primary/10 border-l-2 border-primary' : ''
+                          }`}
+                          onClick={() => setSelectedProductId(product.id)}
+                        >
+                          {product.images?.[0] && (
+                            <img 
+                              src={product.images[0]} 
+                              alt={product.name}
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">{product.shop_name} • ₹{product.price}</p>
+                          </div>
+                          {selectedProductId === product.id && (
+                            <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-            <div>
-              <Label>Notes (Optional)</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Internal notes..."
-              />
-            </div>
+                  {/* Date Range */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Start Date</Label>
+                      <Input
+                        type="datetime-local"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Date (Optional)</Label>
+                      <Input
+                        type="datetime-local"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddFeaturedProduct}>
-                Add to Featured
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+                  {/* Display Order */}
+                  <div className="space-y-2">
+                    <Label>Display Order</Label>
+                    <Input
+                      type="number"
+                      value={displayOrder}
+                      onChange={(e) => setDisplayOrder(e.target.value)}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-muted-foreground">Lower numbers appear first</p>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-2">
+                    <Label>Notes (Optional)</Label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Internal notes..."
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={handleCloseForm}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={handleAddFeaturedProduct}
+                      disabled={isSubmitting || !selectedProductId}
+                    >
+                      {isSubmitting ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-background" />
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Add to Featured
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </ScrollArea>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Review Request Dialog */}
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
