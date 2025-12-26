@@ -178,7 +178,25 @@ export default function SellerRegister() {
   }
 
   if (!canRegister) {
-    return null;
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-16">
+          <div className="container max-w-2xl mx-auto px-4 text-center">
+            <h2 className="text-xl font-medium mb-4">Become a Seller</h2>
+            <p className="text-muted-foreground mb-6">
+              Registration is not available right now. If you are already signed in and think this is an error,
+              please try reloading the page or contact support.
+            </p>
+            <div className="flex items-center justify-center gap-4">
+              <Button variant="outline" onClick={() => window.location.reload()}>Reload</Button>
+              <Button onClick={() => navigate('/')}>Go Home</Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
