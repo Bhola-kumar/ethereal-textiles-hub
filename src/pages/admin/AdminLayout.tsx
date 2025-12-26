@@ -9,7 +9,8 @@ import {
   Users,
   LogOut,
   ChevronRight,
-  Store
+  Store,
+  Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { label: 'Products', icon: Package, href: '/admin/products' },
+  { label: 'Featured', icon: Star, href: '/admin/featured' },
   { label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
   { label: 'Sellers', icon: Store, href: '/admin/sellers' },
   { label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },

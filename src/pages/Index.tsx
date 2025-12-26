@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Award, Truck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrendingPublicProducts, useNewPublicProducts, usePublicProducts, ProductWithShop } from '@/hooks/usePublicProducts';
+import { useFeaturedProducts } from '@/hooks/useFeaturedProducts';
 import { useCategories } from '@/hooks/useCategories';
 import ProductCard from '@/components/product/ProductCard';
 import Header from '@/components/layout/Header';
@@ -121,10 +122,12 @@ const Index = () => {
 
   const { data: trendingProducts = [], isLoading: trendingLoading } = useTrendingPublicProducts();
   const { data: newProducts = [], isLoading: newLoading } = useNewPublicProducts();
+  const { data: featuredProducts = [], isLoading: featuredLoading } = useFeaturedProducts();
   const { data: allProducts = [], isLoading: productsLoading } = usePublicProducts();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
 
-  const featuredProducts = allProducts.slice(0, 6);
+  // Fallback to first 6 products if no admin-curated featured products exist
+  const displayFeaturedProducts = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 6);
 
   const features = [
     { icon: Sparkles, title: 'Handcrafted', description: 'By skilled artisans' },
@@ -367,15 +370,15 @@ const Index = () => {
             </p>
           </motion.div>
 
-          {productsLoading ? (
+          {featuredLoading || productsLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
               ))}
             </div>
-          ) : featuredProducts.length > 0 ? (
+          ) : displayFeaturedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
-              {featuredProducts.map((product, index) => (
+              {displayFeaturedProducts.map((product, index) => (
                 <ProductCard key={product.id} product={product} index={index} />
               ))}
             </div>

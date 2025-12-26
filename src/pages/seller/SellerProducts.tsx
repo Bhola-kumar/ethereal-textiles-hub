@@ -18,8 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Package, Search, ImagePlus, X, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Search, ImagePlus, X, Save, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface Product {
   id: string;
@@ -52,6 +60,14 @@ const productSchema = z.object({
   care_instructions: z.string().max(1000).optional(),
 });
 
+interface FeatureRequest {
+  id: string;
+  product_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes: string | null;
+  requested_at: string;
+}
+
 export default function SellerProducts() {
   const { user } = useAuth();
   const { data: categories = [] } = useCategories();
@@ -61,6 +77,12 @@ export default function SellerProducts() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  
+  // Feature request state
+  const [featureRequests, setFeatureRequests] = useState<FeatureRequest[]>([]);
+  const [showFeatureDialog, setShowFeatureDialog] = useState(false);
+  const [featureProductId, setFeatureProductId] = useState<string | null>(null);
+  const [featureMessage, setFeatureMessage] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
