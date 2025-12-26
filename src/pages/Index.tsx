@@ -5,6 +5,7 @@ import { ArrowRight, Sparkles, Award, Truck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrendingPublicProducts, useNewPublicProducts, usePublicProducts, ProductWithShop } from '@/hooks/usePublicProducts';
 import { useFeaturedProducts } from '@/hooks/useFeaturedProducts';
+import { useFeaturedCollections } from '@/hooks/useFeaturedCollections';
 import { useCategories } from '@/hooks/useCategories';
 import { usePublicShops } from '@/hooks/usePublicShops';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
@@ -130,6 +131,7 @@ const Index = () => {
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const { data: shops = [], isLoading: shopsLoading } = usePublicShops(8);
   const { data: platformStats } = usePlatformStats();
+  const { data: featuredCollections = [], isLoading: collectionsLoading } = useFeaturedCollections();
 
   // Fallback to first 6 products if no admin-curated featured products exist
   const displayFeaturedProducts = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 6);
@@ -363,50 +365,71 @@ const Index = () => {
         isLoading={trendingLoading}
       />
 
-      {/* Feature Banner */}
-      <section className="py-12 lg:py-20">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-charcoal-light to-charcoal-dark border border-border/50"
-          >
-            <div className="absolute top-0 right-0 w-1/2 h-full">
-              <img
-                src="https://images.pexels.com/photos/4210343/pexels-photo-4210343.jpeg?auto=compress&cs=tinysrgb&w=800"
-                alt="Assamese Gamosa Collection"
-                className="w-full h-full object-cover opacity-30"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-charcoal-dark to-transparent" />
-            </div>
-            
-            {/* Glow */}
-            <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
+      {/* Featured Collections - Dynamic from Admin */}
+      {collectionsLoading ? (
+        <section className="py-12 lg:py-20">
+          <div className="container mx-auto px-4">
+            <Skeleton className="h-64 rounded-3xl" />
+          </div>
+        </section>
+      ) : featuredCollections.length > 0 ? (
+        featuredCollections.map((collection, index) => (
+          <section key={collection.id} className="py-12 lg:py-20">
+            <div className="container mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-charcoal-light to-charcoal-dark border border-border/50"
+              >
+                <div className="absolute top-0 right-0 w-1/2 h-full">
+                  {collection.image_url && (
+                    <img
+                      src={collection.image_url}
+                      alt={collection.title}
+                      className="w-full h-full object-cover opacity-30"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-charcoal-dark to-transparent" />
+                </div>
+                
+                {/* Glow */}
+                <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
 
-            <div className="relative z-10 p-8 lg:p-16 max-w-2xl">
-              <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
-                Featured Collection
-              </span>
-              <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
-                Assamese
-                <br />
-                <span className="gradient-text">Gamosa Collection</span>
-              </h2>
-              <p className="text-muted-foreground mb-8 max-w-md">
-                Discover the iconic Bihu Gamosa from Assam. Each piece features intricate red borders 
-                woven with traditional motifs, symbolizing respect and hospitality.
-              </p>
-              <Link to="/products?category=traditional">
-                <Button variant="hero" size="lg">
-                  Explore Collection
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
+                <div className="relative z-10 p-8 lg:p-16 max-w-2xl">
+                  {collection.badge_text && (
+                    <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
+                      {collection.badge_text}
+                    </span>
+                  )}
+                  <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
+                    {collection.subtitle ? (
+                      <>
+                        {collection.subtitle}
+                        <br />
+                        <span className="gradient-text">{collection.title}</span>
+                      </>
+                    ) : (
+                      <span className="gradient-text">{collection.title}</span>
+                    )}
+                  </h2>
+                  {collection.description && (
+                    <p className="text-muted-foreground mb-8 max-w-md">
+                      {collection.description}
+                    </p>
+                  )}
+                  <Link to={collection.link_url}>
+                    <Button variant="hero" size="lg">
+                      {collection.link_text}
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </section>
+        ))
+      ) : null}
 
       {/* New Arrivals */}
       <ProductCarousel

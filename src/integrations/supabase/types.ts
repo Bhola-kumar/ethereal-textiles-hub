@@ -125,6 +125,60 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_collections: {
+        Row: {
+          badge_text: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_text: string
+          link_url: string
+          start_date: string
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_text?: string
+          link_url?: string
+          start_date?: string
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_text?: string
+          link_url?: string
+          start_date?: string
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       featured_product_requests: {
         Row: {
           admin_notes: string | null
