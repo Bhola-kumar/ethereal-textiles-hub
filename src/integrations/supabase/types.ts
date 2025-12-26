@@ -125,6 +125,111 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_product_requests: {
+        Row: {
+          admin_notes: string | null
+          id: string
+          product_id: string
+          request_message: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          seller_id: string
+          status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          id?: string
+          product_id: string
+          request_message?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          seller_id: string
+          status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          id?: string
+          product_id?: string
+          request_message?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          seller_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_product_requests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_product_requests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_shop"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      featured_products: {
+        Row: {
+          added_by: string
+          created_at: string
+          display_order: number | null
+          end_date: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          product_id: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          product_id: string
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          product_id?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_with_shop"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
