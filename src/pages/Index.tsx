@@ -1,23 +1,49 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Award, Truck } from 'lucide-react';
+import { ArrowRight, Sparkles, Award, Truck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { products, categories } from '@/data/products';
+import { useTrendingPublicProducts, useNewPublicProducts, usePublicProducts, ProductWithShop } from '@/hooks/usePublicProducts';
+import { useCategories } from '@/hooks/useCategories';
 import ProductCard from '@/components/product/ProductCard';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProductCarousel = ({ 
   title, 
   products, 
-  viewAllLink 
+  viewAllLink,
+  isLoading 
 }: { 
   title: string; 
-  products: typeof import('@/data/products').products; 
+  products: ProductWithShop[]; 
   viewAllLink: string;
+  isLoading?: boolean;
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  if (isLoading) {
+    return (
+      <section className="py-12 lg:py-20">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+          <div className="flex gap-4 overflow-hidden">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-[280px] lg:w-[320px] flex-shrink-0">
+                <Skeleton className="aspect-[3/4] rounded-xl" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!products.length) return null;
 
   return (
     <section className="py-12 lg:py-20">
@@ -54,7 +80,7 @@ const ProductCarousel = ({
   );
 };
 
-const CategoryCard = ({ category, index }: { category: typeof categories[0]; index: number }) => (
+const CategoryCard = ({ category, index }: { category: { id: string; name: string; image_url?: string | null; slug: string }; index: number }) => (
   <motion.div
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -64,7 +90,7 @@ const CategoryCard = ({ category, index }: { category: typeof categories[0]; ind
     <Link to={`/products?category=${category.id}`}>
       <div className="group relative overflow-hidden rounded-2xl aspect-[4/5] glass-card hover-lift">
         <img
-          src={category.image}
+          src={category.image_url || 'https://images.pexels.com/photos/6044266/pexels-photo-6044266.jpeg?auto=compress&cs=tinysrgb&w=400'}
           alt={category.name}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
@@ -74,7 +100,7 @@ const CategoryCard = ({ category, index }: { category: typeof categories[0]; ind
             {category.name}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {category.count} Products
+            Explore Collection
           </p>
         </div>
       </div>
@@ -93,9 +119,12 @@ const Index = () => {
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
-  const trendingProducts = products.filter(p => p.isTrending);
-  const newProducts = products.filter(p => p.isNew);
-  const featuredProducts = products.slice(0, 6);
+  const { data: trendingProducts = [], isLoading: trendingLoading } = useTrendingPublicProducts();
+  const { data: newProducts = [], isLoading: newLoading } = useNewPublicProducts();
+  const { data: allProducts = [], isLoading: productsLoading } = usePublicProducts();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  const featuredProducts = allProducts.slice(0, 6);
 
   const features = [
     { icon: Sparkles, title: 'Handcrafted', description: 'By skilled artisans' },
@@ -240,11 +269,23 @@ const Index = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            {categories.map((category, index) => (
-              <CategoryCard key={category.id} category={category} index={index} />
-            ))}
-          </div>
+          {categoriesLoading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
+              ))}
+            </div>
+          ) : categories.length > 0 ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {categories.map((category, index) => (
+                <CategoryCard key={category.id} category={category} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              No categories available yet.
+            </div>
+          )}
         </div>
       </section>
 
@@ -253,6 +294,7 @@ const Index = () => {
         title="🔥 Trending Now"
         products={trendingProducts}
         viewAllLink="/products?filter=trending"
+        isLoading={trendingLoading}
       />
 
       {/* Feature Banner */}
@@ -305,6 +347,7 @@ const Index = () => {
         title="✨ New Arrivals"
         products={newProducts}
         viewAllLink="/products?filter=new"
+        isLoading={newLoading}
       />
 
       {/* Featured Products */}
@@ -324,11 +367,24 @@ const Index = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
-            {featuredProducts.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
-            ))}
-          </div>
+          {productsLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+              ))}
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+              {featuredProducts.map((product, index) => (
+                <ProductCard key={product.id} product={product} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="mb-4">No products available yet.</p>
+              <p className="text-sm">Products from active seller shops will appear here.</p>
+            </div>
+          )}
 
           <div className="text-center mt-12">
             <Link to="/products">

@@ -2,10 +2,12 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, ChevronDown, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { products, categories, fabrics, colors, patterns } from '@/data/products';
+import { usePublicProducts } from '@/hooks/usePublicProducts';
+import { useCategories } from '@/hooks/useCategories';
 import ProductCard from '@/components/product/ProductCard';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const FilterSection = ({
   title,
@@ -68,7 +70,10 @@ const Products = () => {
   const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedPatterns, setSelectedPatterns] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+
+  const { data: products = [], isLoading } = usePublicProducts();
+  const { data: categories = [] } = useCategories();
 
   const toggleFilter = (list: string[], item: string, setter: (items: string[]) => void) => {
     if (list.includes(item)) {
@@ -78,27 +83,36 @@ const Products = () => {
     }
   };
 
+  // Extract unique filter options from products
+  const filterOptions = useMemo(() => {
+    const fabrics = [...new Set(products.map(p => p.fabric).filter(Boolean))] as string[];
+    const colors = [...new Set(products.map(p => p.color).filter(Boolean))] as string[];
+    const patterns = [...new Set(products.map(p => p.pattern).filter(Boolean))] as string[];
+    return { fabrics, colors, patterns };
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Apply filters
     if (selectedCategories.length > 0) {
-      result = result.filter((p) => selectedCategories.includes(p.category));
+      result = result.filter((p) => {
+        const categoryName = p.categories?.name;
+        return categoryName && selectedCategories.includes(categoryName);
+      });
     }
     if (selectedFabrics.length > 0) {
-      result = result.filter((p) => selectedFabrics.includes(p.fabric));
+      result = result.filter((p) => p.fabric && selectedFabrics.includes(p.fabric));
     }
     if (selectedColors.length > 0) {
-      result = result.filter((p) => selectedColors.includes(p.color));
+      result = result.filter((p) => p.color && selectedColors.includes(p.color));
     }
     if (selectedPatterns.length > 0) {
-      result = result.filter((p) => selectedPatterns.includes(p.pattern));
+      result = result.filter((p) => p.pattern && selectedPatterns.includes(p.pattern));
     }
     result = result.filter(
       (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
-    // Apply sorting
     switch (sortBy) {
       case 'price-low':
         result.sort((a, b) => a.price - b.price);
@@ -107,18 +121,17 @@ const Products = () => {
         result.sort((a, b) => b.price - a.price);
         break;
       case 'rating':
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       case 'newest':
-        result = result.filter((p) => p.isNew).concat(result.filter((p) => !p.isNew));
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       default:
-        // popularity - trending first
-        result = result.filter((p) => p.isTrending).concat(result.filter((p) => !p.isTrending));
+        result = result.filter((p) => p.is_trending).concat(result.filter((p) => !p.is_trending));
     }
 
     return result;
-  }, [selectedCategories, selectedFabrics, selectedColors, selectedPatterns, priceRange, sortBy]);
+  }, [products, selectedCategories, selectedFabrics, selectedColors, selectedPatterns, priceRange, sortBy]);
 
   const activeFiltersCount =
     selectedCategories.length +
@@ -131,7 +144,7 @@ const Products = () => {
     setSelectedFabrics([]);
     setSelectedColors([]);
     setSelectedPatterns([]);
-    setPriceRange([0, 2000]);
+    setPriceRange([0, 10000]);
   };
 
   return (
@@ -154,8 +167,7 @@ const Products = () => {
                 Our <span className="gradient-text">Collection</span>
               </h1>
               <p className="text-muted-foreground max-w-lg mx-auto">
-                Discover our complete range of handcrafted gamchhas, 
-                each piece a testament to Indian textile heritage.
+                Discover our complete range of handcrafted gamchhas from verified sellers.
               </p>
             </motion.div>
           </div>
@@ -185,7 +197,6 @@ const Products = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                {/* Grid Toggle - Desktop */}
                 <div className="hidden lg:flex items-center gap-1 p-1 bg-secondary rounded-lg">
                   <button
                     onClick={() => setGridCols(2)}
@@ -214,15 +225,10 @@ const Products = () => {
                       <rect x="5" y="1" width="3" height="3" rx="0.5" />
                       <rect x="9" y="1" width="3" height="3" rx="0.5" />
                       <rect x="13" y="1" width="2" height="3" rx="0.5" />
-                      <rect x="1" y="5" width="3" height="3" rx="0.5" />
-                      <rect x="5" y="5" width="3" height="3" rx="0.5" />
-                      <rect x="9" y="5" width="3" height="3" rx="0.5" />
-                      <rect x="13" y="5" width="2" height="3" rx="0.5" />
                     </svg>
                   </button>
                 </div>
 
-                {/* Sort Dropdown */}
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -249,10 +255,7 @@ const Products = () => {
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="font-display font-semibold text-lg">Filters</h3>
                     {activeFiltersCount > 0 && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-sm text-primary hover:underline"
-                      >
+                      <button onClick={clearAllFilters} className="text-sm text-primary hover:underline">
                         Clear all
                       </button>
                     )}
@@ -267,26 +270,25 @@ const Products = () => {
 
                   <FilterSection
                     title="Fabric"
-                    options={fabrics}
+                    options={filterOptions.fabrics}
                     selected={selectedFabrics}
                     onSelect={(opt) => toggleFilter(selectedFabrics, opt, setSelectedFabrics)}
                   />
 
                   <FilterSection
                     title="Color"
-                    options={colors}
+                    options={filterOptions.colors}
                     selected={selectedColors}
                     onSelect={(opt) => toggleFilter(selectedColors, opt, setSelectedColors)}
                   />
 
                   <FilterSection
                     title="Pattern"
-                    options={patterns}
+                    options={filterOptions.patterns}
                     selected={selectedPatterns}
                     onSelect={(opt) => toggleFilter(selectedPatterns, opt, setSelectedPatterns)}
                   />
 
-                  {/* Price Range */}
                   <div className="pb-4">
                     <h4 className="font-medium mb-3">Price Range</h4>
                     <div className="flex items-center gap-2">
@@ -312,9 +314,15 @@ const Products = () => {
 
               {/* Product Grid */}
               <div className="flex-1">
-                {filteredProducts.length === 0 ? (
+                {isLoading ? (
+                  <div className={`grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-${gridCols}`}>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+                    ))}
+                  </div>
+                ) : filteredProducts.length === 0 ? (
                   <div className="text-center py-20">
-                    <p className="text-muted-foreground mb-4">No products found matching your filters.</p>
+                    <p className="text-muted-foreground mb-4">No products found.</p>
                     <Button variant="outline" onClick={clearAllFilters}>
                       Clear Filters
                     </Button>
@@ -322,11 +330,7 @@ const Products = () => {
                 ) : (
                   <div
                     className={`grid gap-4 lg:gap-6 ${
-                      gridCols === 2
-                        ? 'grid-cols-2'
-                        : gridCols === 3
-                        ? 'grid-cols-2 lg:grid-cols-3'
-                        : 'grid-cols-2 lg:grid-cols-4'
+                      gridCols === 2 ? 'grid-cols-2' : gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
                     }`}
                   >
                     {filteredProducts.map((product, index) => (
@@ -360,20 +364,13 @@ const Products = () => {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="font-display font-semibold text-lg">Filters</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsFilterOpen(false)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => setIsFilterOpen(false)}>
                       <X className="h-5 w-5" />
                     </Button>
                   </div>
 
                   {activeFiltersCount > 0 && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="text-sm text-primary hover:underline mb-6"
-                    >
+                    <button onClick={clearAllFilters} className="text-sm text-primary hover:underline mb-6">
                       Clear all filters
                     </button>
                   )}
@@ -387,31 +384,27 @@ const Products = () => {
 
                   <FilterSection
                     title="Fabric"
-                    options={fabrics}
+                    options={filterOptions.fabrics}
                     selected={selectedFabrics}
                     onSelect={(opt) => toggleFilter(selectedFabrics, opt, setSelectedFabrics)}
                   />
 
                   <FilterSection
                     title="Color"
-                    options={colors}
+                    options={filterOptions.colors}
                     selected={selectedColors}
                     onSelect={(opt) => toggleFilter(selectedColors, opt, setSelectedColors)}
                   />
 
                   <FilterSection
                     title="Pattern"
-                    options={patterns}
+                    options={filterOptions.patterns}
                     selected={selectedPatterns}
                     onSelect={(opt) => toggleFilter(selectedPatterns, opt, setSelectedPatterns)}
                   />
 
                   <div className="mt-6">
-                    <Button
-                      variant="hero"
-                      className="w-full"
-                      onClick={() => setIsFilterOpen(false)}
-                    >
+                    <Button variant="hero" className="w-full" onClick={() => setIsFilterOpen(false)}>
                       Show {filteredProducts.length} Products
                     </Button>
                   </div>
