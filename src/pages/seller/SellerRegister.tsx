@@ -209,8 +209,7 @@ export default function SellerRegister() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="py-16">
-        <div className="container max-w-2xl mx-auto px-4">
+      <main className="pt-24 lg:pt-28 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

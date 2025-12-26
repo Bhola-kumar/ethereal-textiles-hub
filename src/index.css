@@ -196,7 +196,7 @@
   }
 
   .netflix-carousel {
-    @apply flex gap-4 overflow-x-auto carousel-scroll pb-4 px-4 -mx-4;
+    @apply flex gap-4 overflow-x-auto overflow-y-visible carousel-scroll pb-6 pt-2 px-4 -mx-4;
     scroll-snap-type: x mandatory;
   }
 
