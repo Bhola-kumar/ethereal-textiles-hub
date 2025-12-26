@@ -285,30 +285,41 @@ const Index = () => {
       {/* Categories Section */}
       <section className="py-12 lg:py-20 bg-charcoal-dark">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
-              Shop by <span className="gradient-text">Category</span>
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              Explore our curated collections of handcrafted gamchhas for every occasion.
-            </p>
-          </motion.div>
+          <div className="flex items-center justify-between mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl lg:text-5xl font-display font-bold mb-2">
+                Shop by <span className="gradient-text">Category</span>
+              </h2>
+              <p className="text-muted-foreground max-w-lg">
+                Explore our curated collections of handcrafted gamchhas for every occasion.
+              </p>
+            </motion.div>
+            <Link to="/products">
+              <Button variant="ghost" className="group hidden sm:flex">
+                View All
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </div>
 
           {categoriesLoading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="netflix-carousel">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="aspect-[4/5] rounded-2xl" />
+                <div key={i} className="w-[200px] lg:w-[280px] flex-shrink-0">
+                  <Skeleton className="aspect-[4/5] rounded-2xl" />
+                </div>
               ))}
             </div>
           ) : categories.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="netflix-carousel">
               {categories.map((category, index) => (
-                <CategoryCard key={category.id} category={category} index={index} />
+                <div key={category.id} className="w-[200px] lg:w-[280px] flex-shrink-0">
+                  <CategoryCard category={category} index={index} />
+                </div>
               ))}
             </div>
           ) : (
@@ -322,30 +333,35 @@ const Index = () => {
       {/* Shop by Sellers Section */}
       <section className="py-12 lg:py-20">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
-              Shop by <span className="gradient-text">Sellers</span>
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              Discover authentic products from our trusted seller community.
-            </p>
-          </motion.div>
+          <div className="flex items-center justify-between mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl lg:text-5xl font-display font-bold mb-2">
+                Shop by <span className="gradient-text">Sellers</span>
+              </h2>
+              <p className="text-muted-foreground max-w-lg">
+                Discover authentic products from our trusted seller community.
+              </p>
+            </motion.div>
+          </div>
 
           {shopsLoading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="netflix-carousel">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="aspect-[16/9] rounded-2xl" />
+                <div key={i} className="w-[280px] lg:w-[320px] flex-shrink-0">
+                  <Skeleton className="aspect-[16/9] rounded-2xl" />
+                </div>
               ))}
             </div>
           ) : shops.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="netflix-carousel">
               {shops.map((shop, index) => (
-                <ShopBySellerCard key={shop.id} shop={shop} index={index} />
+                <div key={shop.id} className="w-[280px] lg:w-[320px] flex-shrink-0">
+                  <ShopBySellerCard shop={shop} index={index} />
+                </div>
               ))}
             </div>
           ) : (

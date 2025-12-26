@@ -32,7 +32,23 @@ export function usePublicShops(limit?: number) {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as PublicShop[];
+      
+      // Filter and transform to ensure required fields are present
+      return (data || [])
+        .filter(shop => shop.id && shop.shop_name && shop.shop_slug)
+        .map(shop => ({
+          id: shop.id!,
+          shop_name: shop.shop_name!,
+          shop_slug: shop.shop_slug!,
+          description: shop.description,
+          logo_url: shop.logo_url,
+          banner_url: shop.banner_url,
+          city: shop.city,
+          state: shop.state,
+          is_verified: shop.is_verified ?? false,
+          is_active: shop.is_active ?? true,
+          created_at: shop.created_at ?? new Date().toISOString(),
+        })) as PublicShop[];
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -50,7 +66,21 @@ export function usePublicShop(shopSlug: string) {
         .maybeSingle();
 
       if (error) throw error;
-      return data as PublicShop | null;
+      if (!data || !data.id || !data.shop_name || !data.shop_slug) return null;
+      
+      return {
+        id: data.id,
+        shop_name: data.shop_name,
+        shop_slug: data.shop_slug,
+        description: data.description,
+        logo_url: data.logo_url,
+        banner_url: data.banner_url,
+        city: data.city,
+        state: data.state,
+        is_verified: data.is_verified ?? false,
+        is_active: data.is_active ?? true,
+        created_at: data.created_at ?? new Date().toISOString(),
+      } as PublicShop;
     },
     enabled: !!shopSlug,
     staleTime: 5 * 60 * 1000,
