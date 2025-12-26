@@ -265,6 +265,43 @@ export default function AdminFeaturedProducts() {
     setShowReviewDialog(true);
   };
 
+  const sendNotificationEmail = async (
+    sellerEmail: string,
+    sellerName: string,
+    productName: string,
+    status: 'approved' | 'rejected',
+    notes: string
+  ) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-feature-notification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            sellerEmail,
+            sellerName,
+            productName,
+            status,
+            adminNotes: notes,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error('Failed to send notification email');
+      } else {
+        console.log('Notification email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending notification email:', error);
+    }
+  };
+
   const handleApproveRequest = async () => {
     if (!selectedRequest) return;
 
@@ -298,6 +335,17 @@ export default function AdminFeaturedProducts() {
       console.error('Error adding to featured:', insertError);
     }
 
+    // Send notification email to seller
+    if (selectedRequest.seller_profile?.email) {
+      sendNotificationEmail(
+        selectedRequest.seller_profile.email,
+        selectedRequest.seller_profile.full_name || 'Seller',
+        selectedRequest.product?.name || 'Your product',
+        'approved',
+        adminNotes
+      );
+    }
+
     toast.success('Request approved and product featured');
     setShowReviewDialog(false);
     setSelectedRequest(null);
@@ -320,6 +368,17 @@ export default function AdminFeaturedProducts() {
     if (error) {
       toast.error('Failed to reject request');
       return;
+    }
+
+    // Send notification email to seller
+    if (selectedRequest.seller_profile?.email) {
+      sendNotificationEmail(
+        selectedRequest.seller_profile.email,
+        selectedRequest.seller_profile.full_name || 'Seller',
+        selectedRequest.product?.name || 'Your product',
+        'rejected',
+        adminNotes
+      );
     }
 
     toast.success('Request rejected');
