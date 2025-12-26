@@ -534,7 +534,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shops_public: {
+        Row: {
+          banner_url: string | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          is_verified: boolean | null
+          logo_url: string | null
+          shop_name: string | null
+          shop_slug: string | null
+          state: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          shop_name?: string | null
+          shop_slug?: string | null
+          state?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          logo_url?: string | null
+          shop_name?: string | null
+          shop_slug?: string | null
+          state?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       grant_seller_role: { Args: never; Returns: undefined }
