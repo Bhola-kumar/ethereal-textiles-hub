@@ -1,12 +1,13 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Award, Truck, Loader2, Store } from 'lucide-react';
+import { ArrowRight, Sparkles, Award, Truck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrendingPublicProducts, useNewPublicProducts, usePublicProducts, ProductWithShop } from '@/hooks/usePublicProducts';
 import { useFeaturedProducts } from '@/hooks/useFeaturedProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { usePublicShops } from '@/hooks/usePublicShops';
+import { usePlatformStats } from '@/hooks/usePlatformStats';
 import ProductCard from '@/components/product/ProductCard';
 import ShopBySellerCard from '@/components/home/ShopBySellerCard';
 import Header from '@/components/layout/Header';
@@ -128,8 +129,30 @@ const Index = () => {
   const { data: allProducts = [], isLoading: productsLoading } = usePublicProducts();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const { data: shops = [], isLoading: shopsLoading } = usePublicShops(8);
+  const { data: platformStats } = usePlatformStats();
+
   // Fallback to first 6 products if no admin-curated featured products exist
   const displayFeaturedProducts = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 6);
+
+  // Dynamic trust badges based on real platform data
+  const trustBadges = [
+    { 
+      value: platformStats?.totalOrders ? `${platformStats.totalOrders}+` : '0', 
+      label: 'Orders Completed' 
+    },
+    { 
+      value: platformStats?.totalProducts ? `${platformStats.totalProducts}+` : '0', 
+      label: 'Products Available' 
+    },
+    { 
+      value: '100%', 
+      label: 'Handwoven' 
+    },
+    { 
+      value: platformStats?.avgRating ? `${platformStats.avgRating}★` : 'N/A', 
+      label: 'Average Rating' 
+    },
+  ];
 
   const features = [
     { icon: Sparkles, title: 'Handcrafted', description: 'By skilled artisans' },
@@ -444,12 +467,7 @@ const Index = () => {
       <section className="py-12 lg:py-16 border-t border-border/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { value: '15K+', label: 'Happy Customers' },
-              { value: '230+', label: 'Regional Variants' },
-              { value: '100%', label: 'Handwoven' },
-              { value: '4.8★', label: 'Average Rating' },
-            ].map((stat, index) => (
+            {trustBadges.map((stat, index) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
