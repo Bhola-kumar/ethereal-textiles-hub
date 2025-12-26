@@ -85,15 +85,7 @@ export default function SellerRegister() {
         if (existingShop) {
           // Legacy/partial registration fix:
           // shop exists but user_roles might not have been created.
-          const { error: upsertRoleError } = await supabase
-            .from('user_roles')
-            .upsert(
-              {
-                user_id: user.id,
-                role: 'seller',
-              },
-              { onConflict: 'user_id,role', ignoreDuplicates: true }
-            );
+          const { error: upsertRoleError } = await supabase.rpc('grant_seller_role');
 
           if (upsertRoleError && !upsertRoleError.message?.toLowerCase().includes('duplicate')) {
             throw upsertRoleError;
@@ -163,15 +155,10 @@ export default function SellerRegister() {
 
       if (shopError) throw shopError;
 
-      // Add seller role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: user!.id,
-          role: 'seller',
-        });
+      // Add seller role using security definer function (bypasses RLS)
+      const { error: roleError } = await supabase.rpc('grant_seller_role');
 
-      if (roleError && !roleError.message.includes('duplicate')) {
+      if (roleError && !roleError.message?.includes('duplicate')) {
         throw roleError;
       }
 
