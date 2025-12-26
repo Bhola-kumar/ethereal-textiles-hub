@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
@@ -26,63 +26,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
 
-  const fetchUserRoles = async (userId: string) => {
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const fetchUserRoles = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
 
-      if (!error && data) {
-        const userRoles = data.map(r => r.role) as AppRole[];
-        setRoles(userRoles);
-        return userRoles;
-      }
-      return [];
+      if (error) throw error;
+
+      const userRoles = (data ?? []).map((r) => r.role) as AppRole[];
+      if (mountedRef.current) setRoles(userRoles);
+      return userRoles;
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      // Keep this quiet-ish: auth listeners can run frequently in dev
+      if (mountedRef.current) setRoles([]);
       return [];
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Set up auth state listener FIRST (must be synchronous to avoid auth deadlocks)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
 
-        if (session?.user) {
-          await fetchUserRoles(session.user.id);
+      if (!nextSession?.user) {
+        setRoles([]);
+      } else {
+        // Defer role fetch outside the auth callback
+        setTimeout(() => {
+          fetchUserRoles(nextSession.user.id);
+        }, 0);
+      }
+
+      setLoading(false);
+    });
+
+    // THEN check for existing session
+    (async () => {
+      try {
+        const {
+          data: { session: existingSession },
+        } = await supabase.auth.getSession();
+
+        setSession(existingSession);
+        setUser(existingSession?.user ?? null);
+
+        if (existingSession?.user) {
+          setTimeout(() => {
+            fetchUserRoles(existingSession.user.id);
+          }, 0);
         } else {
           setRoles([]);
         }
-
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          await fetchUserRoles(session.user.id);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
+      } catch {
+        setRoles([]);
       } finally {
         setLoading(false);
       }
-    };
-
-    initAuth();
+    })();
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchUserRoles]);
 
   const signInWithGoogle = async () => {
     const redirectUrl = `${window.location.origin}/`;
@@ -128,18 +144,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSeller = roles.includes('seller');
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      loading,
-      roles,
-      isAdmin,
-      isSeller,
-      signInWithGoogle,
-      signInWithEmail,
-      signUpWithEmail,
-      signOut,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        roles,
+        isAdmin,
+        isSeller,
+        signInWithGoogle,
+        signInWithEmail,
+        signUpWithEmail,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -152,3 +170,4 @@ export function useAuth() {
   }
   return context;
 }
+
