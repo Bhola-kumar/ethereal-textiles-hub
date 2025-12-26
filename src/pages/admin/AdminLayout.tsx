@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Store,
   Star,
-  FolderOpen
+  FolderOpen,
+  Image
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { label: 'Products', icon: Package, href: '/admin/products' },
   { label: 'Categories', icon: FolderOpen, href: '/admin/categories' },
+  { label: 'Collections', icon: Image, href: '/admin/collections' },
   { label: 'Featured', icon: Star, href: '/admin/featured' },
   { label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
   { label: 'Sellers', icon: Store, href: '/admin/sellers' },
