@@ -23,10 +23,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
 
   const mountedRef = useRef(true);
+  const rolesReqIdRef = useRef(0);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -46,59 +49,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userRoles = (data ?? []).map((r) => r.role) as AppRole[];
       if (mountedRef.current) setRoles(userRoles);
       return userRoles;
-    } catch (error) {
-      // Keep this quiet-ish: auth listeners can run frequently in dev
+    } catch {
       if (mountedRef.current) setRoles([]);
       return [];
     }
   }, []);
 
+  const startRoleFetch = useCallback(
+    (userId: string) => {
+      rolesReqIdRef.current += 1;
+      const reqId = rolesReqIdRef.current;
+      setRolesLoading(true);
+
+      setTimeout(async () => {
+        const fetched = await fetchUserRoles(userId);
+        if (!mountedRef.current) return;
+        if (reqId !== rolesReqIdRef.current) return;
+
+        // If user has no explicit roles, keep as customer by default.
+        setRoles(fetched);
+        setRolesLoading(false);
+      }, 0);
+    },
+    [fetchUserRoles]
+  );
+
   useEffect(() => {
-    // Set up auth state listener FIRST (must be synchronous to avoid auth deadlocks)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Synchronous only (avoid deadlocks)
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
       if (!nextSession?.user) {
         setRoles([]);
+        setRolesLoading(false);
+        setAuthInitialized(true);
       } else {
-        // Defer role fetch outside the auth callback
-        setTimeout(() => {
-          fetchUserRoles(nextSession.user.id);
-        }, 0);
+        setAuthInitialized(true);
+        startRoleFetch(nextSession.user.id);
       }
-
-      setLoading(false);
     });
 
-    // THEN check for existing session
     (async () => {
       try {
         const {
           data: { session: existingSession },
         } = await supabase.auth.getSession();
 
+        if (!mountedRef.current) return;
+
         setSession(existingSession);
         setUser(existingSession?.user ?? null);
 
-        if (existingSession?.user) {
-          setTimeout(() => {
-            fetchUserRoles(existingSession.user.id);
-          }, 0);
-        } else {
+        setAuthInitialized(true);
+
+        if (!existingSession?.user) {
           setRoles([]);
+          setRolesLoading(false);
+        } else {
+          startRoleFetch(existingSession.user.id);
         }
       } catch {
+        if (!mountedRef.current) return;
+        setSession(null);
+        setUser(null);
         setRoles([]);
-      } finally {
-        setLoading(false);
+        setRolesLoading(false);
+        setAuthInitialized(true);
       }
     })();
 
     return () => subscription.unsubscribe();
-  }, [fetchUserRoles]);
+  }, [startRoleFetch]);
+
+  const loading = !authInitialized || rolesLoading;
 
   const signInWithGoogle = async () => {
     const redirectUrl = `${window.location.origin}/`;
