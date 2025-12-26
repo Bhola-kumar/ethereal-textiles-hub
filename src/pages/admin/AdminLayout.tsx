@@ -10,7 +10,8 @@ import {
   LogOut,
   ChevronRight,
   Store,
-  Star
+  Star,
+  FolderOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { label: 'Products', icon: Package, href: '/admin/products' },
+  { label: 'Categories', icon: FolderOpen, href: '/admin/categories' },
   { label: 'Featured', icon: Star, href: '/admin/featured' },
   { label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
   { label: 'Sellers', icon: Store, href: '/admin/sellers' },

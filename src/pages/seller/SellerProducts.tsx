@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Package, Search, ImagePlus, X, Save, Star } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Search, ImagePlus, X, Save, Star, FolderPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -70,7 +70,7 @@ interface FeatureRequest {
 
 export default function SellerProducts() {
   const { user } = useAuth();
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [], refetch: refetchCategories } = useCategories();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -83,6 +83,11 @@ export default function SellerProducts() {
   const [showFeatureDialog, setShowFeatureDialog] = useState(false);
   const [featureProductId, setFeatureProductId] = useState<string | null>(null);
   const [featureMessage, setFeatureMessage] = useState('');
+
+  // New category creation state
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -107,6 +112,7 @@ export default function SellerProducts() {
       fetchFeatureRequests();
     }
   }, [user]);
+
 
   const fetchProducts = async () => {
     const { data, error } = await supabase
@@ -170,6 +176,46 @@ export default function SellerProducts() {
     return featureRequests.find(r => r.product_id === productId);
   };
 
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error('Category name is required');
+      return;
+    }
+
+    setIsCreatingCategory(true);
+    try {
+      const slug = newCategoryName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-') + '-' + Date.now();
+
+      const { data, error } = await supabase
+        .from('categories')
+        .insert({
+          name: newCategoryName.trim(),
+          slug: slug,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Category created successfully!');
+      setNewCategoryName('');
+      setShowNewCategoryInput(false);
+      await refetchCategories();
+      
+      // Set the newly created category as selected
+      if (data) {
+        setFormData({ ...formData, category_id: data.id });
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create category');
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '', description: '', price: '', original_price: '',
@@ -177,6 +223,8 @@ export default function SellerProducts() {
       images: '', care_instructions: '', is_published: false, is_trending: false, is_new: true,
     });
     setEditingProduct(null);
+    setShowNewCategoryInput(false);
+    setNewCategoryName('');
   };
 
   const handleAddNew = () => {
@@ -546,12 +594,63 @@ export default function SellerProducts() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-sm font-medium">Category</Label>
-                        <Select value={formData.category_id} onValueChange={v => setFormData({...formData, category_id: v})}>
-                          <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
-                          <SelectContent>
-                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                        {showNewCategoryInput ? (
+                          <div className="mt-1.5 space-y-2">
+                            <Input
+                              value={newCategoryName}
+                              onChange={e => setNewCategoryName(e.target.value)}
+                              placeholder="New category name"
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleCreateCategory}
+                                disabled={isCreatingCategory}
+                                className="flex-1"
+                              >
+                                {isCreatingCategory ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-background" />
+                                ) : (
+                                  <>
+                                    <Save className="h-3 w-3 mr-1" />
+                                    Create
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setShowNewCategoryInput(false);
+                                  setNewCategoryName('');
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-1.5 flex gap-2">
+                            <Select value={formData.category_id} onValueChange={v => setFormData({...formData, category_id: v})}>
+                              <SelectTrigger className="flex-1"><SelectValue placeholder="Select" /></SelectTrigger>
+                              <SelectContent>
+                                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setShowNewCategoryInput(true)}
+                              title="Add new category"
+                            >
+                              <FolderPlus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Fabric</Label>

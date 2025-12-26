@@ -1,12 +1,14 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Award, Truck, Loader2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Award, Truck, Loader2, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTrendingPublicProducts, useNewPublicProducts, usePublicProducts, ProductWithShop } from '@/hooks/usePublicProducts';
 import { useFeaturedProducts } from '@/hooks/useFeaturedProducts';
 import { useCategories } from '@/hooks/useCategories';
+import { usePublicShops } from '@/hooks/usePublicShops';
 import ProductCard from '@/components/product/ProductCard';
+import ShopBySellerCard from '@/components/home/ShopBySellerCard';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -125,7 +127,7 @@ const Index = () => {
   const { data: featuredProducts = [], isLoading: featuredLoading } = useFeaturedProducts();
   const { data: allProducts = [], isLoading: productsLoading } = usePublicProducts();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
-
+  const { data: shops = [], isLoading: shopsLoading } = usePublicShops(8);
   // Fallback to first 6 products if no admin-curated featured products exist
   const displayFeaturedProducts = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 6);
 
@@ -287,6 +289,44 @@ const Index = () => {
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               No categories available yet.
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Shop by Sellers Section */}
+      <section className="py-12 lg:py-20">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
+              Shop by <span className="gradient-text">Sellers</span>
+            </h2>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Discover authentic products from our trusted seller community.
+            </p>
+          </motion.div>
+
+          {shopsLoading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="aspect-[16/9] rounded-2xl" />
+              ))}
+            </div>
+          ) : shops.length > 0 ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              {shops.map((shop, index) => (
+                <ShopBySellerCard key={shop.id} shop={shop} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <Store className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No seller shops available yet.</p>
             </div>
           )}
         </div>
