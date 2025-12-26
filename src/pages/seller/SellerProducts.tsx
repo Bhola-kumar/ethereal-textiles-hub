@@ -104,6 +104,7 @@ export default function SellerProducts() {
   useEffect(() => {
     if (user) {
       fetchProducts();
+      fetchFeatureRequests();
     }
   }, [user]);
 
@@ -118,6 +119,55 @@ export default function SellerProducts() {
       setProducts(data);
     }
     setLoading(false);
+  };
+
+  const fetchFeatureRequests = async () => {
+    const { data } = await supabase
+      .from('featured_product_requests')
+      .select('id, product_id, status, admin_notes, requested_at')
+      .eq('seller_id', user!.id);
+    
+    if (data) {
+      setFeatureRequests(data.map(r => ({
+        ...r,
+        status: r.status as 'pending' | 'approved' | 'rejected'
+      })));
+    }
+  };
+
+  const handleRequestFeature = (productId: string) => {
+    setFeatureProductId(productId);
+    setFeatureMessage('');
+    setShowFeatureDialog(true);
+  };
+
+  const submitFeatureRequest = async () => {
+    if (!featureProductId) return;
+    
+    const { error } = await supabase
+      .from('featured_product_requests')
+      .insert({
+        product_id: featureProductId,
+        seller_id: user!.id,
+        request_message: featureMessage || null
+      });
+    
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('You already have a pending request for this product');
+      } else {
+        toast.error('Failed to submit request');
+      }
+      return;
+    }
+    
+    toast.success('Feature request submitted! Admin will review it shortly.');
+    setShowFeatureDialog(false);
+    fetchFeatureRequests();
+  };
+
+  const getFeatureRequestStatus = (productId: string) => {
+    return featureRequests.find(r => r.product_id === productId);
   };
 
   const resetForm = () => {
@@ -328,7 +378,30 @@ export default function SellerProducts() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground line-clamp-1">{product.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground line-clamp-1">{product.name}</p>
+                            {(() => {
+                              const request = getFeatureRequestStatus(product.id);
+                              if (request) {
+                                return (
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      request.status === 'pending' 
+                                        ? 'text-yellow-500 border-yellow-500' 
+                                        : request.status === 'approved' 
+                                          ? 'text-green-500 border-green-500' 
+                                          : 'text-red-500 border-red-500'
+                                    }`}
+                                  >
+                                    <Star className="h-3 w-3 mr-1" />
+                                    {request.status === 'pending' ? 'Pending' : request.status === 'approved' ? 'Featured' : 'Rejected'}
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-sm text-primary font-semibold">
                               ₹{Number(product.price).toLocaleString()}
@@ -352,6 +425,17 @@ export default function SellerProducts() {
                           </div>
                         </div>
                         <div className="flex gap-1">
+                          {product.is_published && !getFeatureRequestStatus(product.id) && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); handleRequestFeature(product.id); }}
+                              title="Request to be featured"
+                              className="text-yellow-500 hover:text-yellow-600"
+                            >
+                              <Star className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon"
@@ -592,6 +676,53 @@ export default function SellerProducts() {
           </Card>
         </div>
       )}
+
+      {/* Feature Request Dialog */}
+      <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              Request to be Featured
+            </DialogTitle>
+            <DialogDescription>
+              Submit a request to have your product featured on the homepage. 
+              The admin will review and approve or reject your request.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            {featureProductId && (
+              <div className="p-3 bg-accent rounded-lg">
+                <p className="font-medium">
+                  {products.find(p => p.id === featureProductId)?.name}
+                </p>
+              </div>
+            )}
+            
+            <div>
+              <Label>Message to Admin (Optional)</Label>
+              <Textarea
+                value={featureMessage}
+                onChange={(e) => setFeatureMessage(e.target.value)}
+                placeholder="Tell us why this product should be featured..."
+                rows={3}
+                className="mt-1.5"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowFeatureDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={submitFeatureRequest}>
+                <Star className="h-4 w-4 mr-2" />
+                Submit Request
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
