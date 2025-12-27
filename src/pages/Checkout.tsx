@@ -283,8 +283,7 @@ export default function Checkout() {
           payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
           notes: paymentMethod === 'cod' 
             ? `Cash on Delivery | GST: ₹${totalGst.toFixed(2)} | Convenience: ₹${totalConvenience.toFixed(2)}` 
-            : `UPI Payment - Transaction ID: ${transactionId || 'Pending'} | GST: ₹${totalGst.toFixed(2)} | Convenience: ₹${totalConvenience.toFixed(2)}`,
-          tracking_id: transactionId || null,
+            : `UPI Payment | Transaction ID: ${transactionId || 'Pending'} | GST: ₹${totalGst.toFixed(2)} | Convenience: ₹${totalConvenience.toFixed(2)}`,
         })
         .select()
         .single();
