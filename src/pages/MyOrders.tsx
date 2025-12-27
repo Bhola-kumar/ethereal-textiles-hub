@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OrderInvoice from '@/components/order/OrderInvoice';
 import OrderDetailsModal from '@/components/order/OrderDetailsModal';
+import WriteReviewModal from '@/components/order/WriteReviewModal';
 
 const statusSteps = [
   { key: 'pending', label: 'Placed', icon: Clock },
@@ -66,6 +67,7 @@ export default function MyOrders() {
   const { data: orders, isLoading, refetch } = useOrders(user?.id);
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
+  const [reviewItem, setReviewItem] = useState<{ productId: string; productName: string; productImage: string | null } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -236,6 +238,21 @@ export default function MyOrders() {
                               <p className="text-xs text-muted-foreground">
                                 Qty: {item.quantity} × ₹{item.price}
                               </p>
+                              {order.status === 'delivered' && item.product_id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs text-primary hover:text-primary"
+                                  onClick={() => setReviewItem({
+                                    productId: item.product_id!,
+                                    productName: item.product_name,
+                                    productImage: item.product_image,
+                                  })}
+                                >
+                                  <Star className="h-3 w-3 mr-1" />
+                                  Write Review
+                                </Button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -331,6 +348,16 @@ export default function MyOrders() {
           open={!!detailsOrder}
           onOpenChange={(open) => !open && setDetailsOrder(null)}
         />
+        {/* Write Review Modal */}
+        {reviewItem && (
+          <WriteReviewModal
+            open={!!reviewItem}
+            onOpenChange={(open) => !open && setReviewItem(null)}
+            productId={reviewItem.productId}
+            productName={reviewItem.productName}
+            productImage={reviewItem.productImage}
+          />
+        )}
       </main>
 
       <Footer />

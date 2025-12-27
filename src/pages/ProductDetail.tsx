@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { usePublicProduct, usePublicProducts } from '@/hooks/usePublicProducts';
 import { useCartStore } from '@/store/cartStore';
 import ProductCard from '@/components/product/ProductCard';
+import ProductReviews from '@/components/product/ProductReviews';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
@@ -419,6 +420,8 @@ const ProductDetail = () => {
           </div>
         </section>
 
+        {/* Product Reviews Section */}
+        <ProductReviews productId={product.id} productName={product.name} />
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <section className="py-12 lg:py-20 bg-charcoal-dark">
