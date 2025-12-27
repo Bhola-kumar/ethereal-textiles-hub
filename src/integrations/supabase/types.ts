@@ -780,6 +780,63 @@ export type Database = {
           },
         ]
       }
+      shops_payment_public: {
+        Row: {
+          accepts_cod: boolean | null
+          charge_convenience: boolean | null
+          charge_gst: boolean | null
+          convenience_charge: number | null
+          free_shipping_above: number | null
+          gst_percentage: number | null
+          id: string | null
+          is_active: boolean | null
+          is_verified: boolean | null
+          payment_instructions: string | null
+          payment_qr_url: string | null
+          seller_id: string | null
+          shipping_charge: number | null
+          shop_name: string | null
+          shop_slug: string | null
+          upi_id: string | null
+        }
+        Insert: {
+          accepts_cod?: boolean | null
+          charge_convenience?: boolean | null
+          charge_gst?: boolean | null
+          convenience_charge?: number | null
+          free_shipping_above?: number | null
+          gst_percentage?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          payment_instructions?: string | null
+          payment_qr_url?: string | null
+          seller_id?: string | null
+          shipping_charge?: number | null
+          shop_name?: string | null
+          shop_slug?: string | null
+          upi_id?: string | null
+        }
+        Update: {
+          accepts_cod?: boolean | null
+          charge_convenience?: boolean | null
+          charge_gst?: boolean | null
+          convenience_charge?: number | null
+          free_shipping_above?: number | null
+          gst_percentage?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          payment_instructions?: string | null
+          payment_qr_url?: string | null
+          seller_id?: string | null
+          shipping_charge?: number | null
+          shop_name?: string | null
+          shop_slug?: string | null
+          upi_id?: string | null
+        }
+        Relationships: []
+      }
       shops_public: {
         Row: {
           banner_url: string | null

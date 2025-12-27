@@ -136,13 +136,29 @@ export default function Checkout() {
     
     if (sellerIds.length === 0) return;
 
+    // Use the public view that's accessible to all users for checkout
     const { data } = await supabase
-      .from('shops')
+      .from('shops_payment_public' as any)
       .select('seller_id, shop_name, upi_id, accepts_cod, payment_instructions, payment_qr_url, shipping_charge, free_shipping_above, gst_percentage, charge_gst, convenience_charge, charge_convenience')
       .in('seller_id', sellerIds);
 
-    if (data) {
-      setSellerPayments(data.map(s => ({
+    if (data && Array.isArray(data)) {
+      const shopData = data as unknown as Array<{
+        seller_id: string;
+        shop_name: string;
+        upi_id: string | null;
+        accepts_cod: boolean | null;
+        payment_instructions: string | null;
+        payment_qr_url: string | null;
+        shipping_charge: number | null;
+        free_shipping_above: number | null;
+        gst_percentage: number | null;
+        charge_gst: boolean | null;
+        convenience_charge: number | null;
+        charge_convenience: boolean | null;
+      }>;
+      
+      setSellerPayments(shopData.map(s => ({
         ...s,
         shipping_charge: Number(s.shipping_charge) || 0,
         free_shipping_above: s.free_shipping_above ? Number(s.free_shipping_above) : null,
@@ -162,7 +178,7 @@ export default function Checkout() {
         }
       });
 
-      const sellerTotals: SellerCartTotal[] = data.map(seller => {
+      const sellerTotals: SellerCartTotal[] = shopData.map(seller => {
         const sellerSubtotal = totalsMap.get(seller.seller_id) || 0;
         const shippingCharge = Number(seller.shipping_charge) || 0;
         const freeShippingAbove = seller.free_shipping_above ? Number(seller.free_shipping_above) : null;
