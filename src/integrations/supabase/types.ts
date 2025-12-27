@@ -586,11 +586,16 @@ export type Database = {
           bank_account_number: string | null
           bank_ifsc: string | null
           banner_url: string | null
+          charge_convenience: boolean | null
+          charge_gst: boolean | null
           city: string | null
+          convenience_charge: number | null
           created_at: string
           description: string | null
           email: string | null
+          free_shipping_above: number | null
           gst_number: string | null
+          gst_percentage: number | null
           id: string
           is_active: boolean | null
           is_verified: boolean | null
@@ -600,6 +605,7 @@ export type Database = {
           phone: string | null
           pincode: string | null
           seller_id: string
+          shipping_charge: number | null
           shop_name: string
           shop_slug: string
           state: string | null
@@ -613,11 +619,16 @@ export type Database = {
           bank_account_number?: string | null
           bank_ifsc?: string | null
           banner_url?: string | null
+          charge_convenience?: boolean | null
+          charge_gst?: boolean | null
           city?: string | null
+          convenience_charge?: number | null
           created_at?: string
           description?: string | null
           email?: string | null
+          free_shipping_above?: number | null
           gst_number?: string | null
+          gst_percentage?: number | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -627,6 +638,7 @@ export type Database = {
           phone?: string | null
           pincode?: string | null
           seller_id: string
+          shipping_charge?: number | null
           shop_name: string
           shop_slug: string
           state?: string | null
@@ -640,11 +652,16 @@ export type Database = {
           bank_account_number?: string | null
           bank_ifsc?: string | null
           banner_url?: string | null
+          charge_convenience?: boolean | null
+          charge_gst?: boolean | null
           city?: string | null
+          convenience_charge?: number | null
           created_at?: string
           description?: string | null
           email?: string | null
+          free_shipping_above?: number | null
           gst_number?: string | null
+          gst_percentage?: number | null
           id?: string
           is_active?: boolean | null
           is_verified?: boolean | null
@@ -654,6 +671,7 @@ export type Database = {
           phone?: string | null
           pincode?: string | null
           seller_id?: string
+          shipping_charge?: number | null
           shop_name?: string
           shop_slug?: string
           state?: string | null

@@ -12,6 +12,10 @@ interface SellerPaymentInfo {
   accepts_cod: boolean | null;
   payment_instructions: string | null;
   payment_qr_url: string | null;
+  amount: number;
+  shipping_charge: number;
+  gst_amount: number;
+  convenience_charge: number;
 }
 
 interface PaymentQRCodeProps {
@@ -111,10 +115,34 @@ export default function PaymentQRCode({ seller, amount }: PaymentQRCodeProps) {
           </div>
         )}
 
-        {/* Amount to Pay */}
-        <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
-          <span className="text-sm font-medium">Amount to Pay</span>
-          <span className="text-lg font-bold text-primary">₹{amount.toLocaleString()}</span>
+        {/* Amount Breakdown */}
+        <div className="space-y-2 p-3 bg-primary/10 rounded-lg">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span>₹{seller.amount.toLocaleString()}</span>
+          </div>
+          {seller.shipping_charge > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Shipping</span>
+              <span>₹{seller.shipping_charge.toLocaleString()}</span>
+            </div>
+          )}
+          {seller.gst_amount > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">GST</span>
+              <span>₹{seller.gst_amount.toFixed(2)}</span>
+            </div>
+          )}
+          {seller.convenience_charge > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Convenience Fee</span>
+              <span>₹{seller.convenience_charge.toLocaleString()}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between pt-2 border-t border-primary/20">
+            <span className="text-sm font-medium">Total to Pay</span>
+            <span className="text-lg font-bold text-primary">₹{amount.toLocaleString()}</span>
+          </div>
         </div>
       </CardContent>
     </Card>
