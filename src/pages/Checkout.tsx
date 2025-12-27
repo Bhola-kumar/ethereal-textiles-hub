@@ -19,12 +19,14 @@ import {
   ArrowLeft, 
   Plus,
   CheckCircle,
-  Copy,
   Banknote,
-  QrCode
+  QrCode,
+  ShoppingBag
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import PaymentQRCode from '@/components/checkout/PaymentQRCode';
+import PaymentConfirmation from '@/components/checkout/PaymentConfirmation';
 import { Tables } from '@/integrations/supabase/types';
 
 type Address = Tables<'addresses'>;
@@ -36,6 +38,16 @@ interface SellerPaymentInfo {
   accepts_cod: boolean | null;
   payment_instructions: string | null;
   payment_qr_url: string | null;
+}
+
+interface SellerCartTotal {
+  seller_id: string;
+  shop_name: string;
+  amount: number;
+  upi_id: string | null;
+  payment_qr_url: string | null;
+  payment_instructions: string | null;
+  accepts_cod: boolean | null;
 }
 
 const addressSchema = z.object({
@@ -60,6 +72,7 @@ export default function Checkout() {
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
   const [sellerPayments, setSellerPayments] = useState<SellerPaymentInfo[]>([]);
+  const [sellerCartTotals, setSellerCartTotals] = useState<SellerCartTotal[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
@@ -122,6 +135,28 @@ export default function Checkout() {
 
     if (data) {
       setSellerPayments(data);
+      
+      // Calculate totals per seller
+      const totalsMap = new Map<string, number>();
+      cartItems.forEach(item => {
+        const sellerId = item.products.seller_id;
+        if (sellerId) {
+          const current = totalsMap.get(sellerId) || 0;
+          totalsMap.set(sellerId, current + (item.products.price * item.quantity));
+        }
+      });
+
+      const sellerTotals: SellerCartTotal[] = data.map(seller => ({
+        seller_id: seller.seller_id,
+        shop_name: seller.shop_name,
+        amount: totalsMap.get(seller.seller_id) || 0,
+        upi_id: seller.upi_id,
+        payment_qr_url: seller.payment_qr_url,
+        payment_instructions: seller.payment_instructions,
+        accepts_cod: seller.accepts_cod,
+      }));
+      
+      setSellerCartTotals(sellerTotals);
     }
   };
 
@@ -161,7 +196,7 @@ export default function Checkout() {
     fetchAddresses();
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (transactionId?: string) => {
     if (!selectedAddressId || !cartItems || cartItems.length === 0) {
       toast.error('Please select an address');
       return;
@@ -195,7 +230,10 @@ export default function Checkout() {
             pincode: selectedAddress.pincode,
           },
           payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
-          notes: paymentMethod === 'cod' ? 'Cash on Delivery' : 'UPI Payment',
+          notes: paymentMethod === 'cod' 
+            ? 'Cash on Delivery' 
+            : `UPI Payment - Transaction ID: ${transactionId || 'Pending'}`,
+          tracking_id: transactionId || null, // Store transaction ID temporarily
         })
         .select()
         .single();
@@ -231,14 +269,18 @@ export default function Checkout() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard');
+  const handleCODOrder = () => {
+    handlePlaceOrder();
   };
 
   const subtotal = cartItems?.reduce((sum, item) => sum + item.products.price * item.quantity, 0) || 0;
   const shipping = subtotal > 999 ? 0 : 99;
   const total = subtotal + shipping;
+
+  // Check if any seller accepts COD
+  const anyCODAvailable = sellerPayments.some(s => s.accepts_cod !== false);
+  // Check if any seller has UPI configured
+  const anyUPIAvailable = sellerPayments.some(s => s.upi_id || s.payment_qr_url);
 
   if (authLoading || cartLoading) {
     return (
@@ -254,7 +296,9 @@ export default function Checkout() {
         <Header />
         <main className="pt-24 pb-12">
           <div className="container max-w-4xl mx-auto px-4 text-center">
+            <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h1 className="text-2xl font-display font-bold mb-4">Your cart is empty</h1>
+            <p className="text-muted-foreground mb-6">Add some products to your cart to checkout</p>
             <Link to="/products">
               <Button variant="hero">Continue Shopping</Button>
             </Link>
@@ -276,54 +320,20 @@ export default function Checkout() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-12"
             >
-              <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
+              <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="h-10 w-10 text-green-500" />
+              </div>
               <h1 className="text-3xl font-display font-bold mb-2">Order Placed!</h1>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-2">
                 Your order #{orderNumber} has been placed successfully.
               </p>
-              
-              {paymentMethod === 'upi' && sellerPayments.length > 0 && (
-                <Card className="mt-8 text-left border-primary/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <CreditCard className="h-5 w-5 text-primary" />
-                      Complete Payment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Please complete the payment to the seller(s) using the UPI details below:
-                    </p>
-                    {sellerPayments.map((seller) => (
-                      <div key={seller.seller_id} className="p-4 bg-muted/50 rounded-lg">
-                        <p className="font-medium mb-2">{seller.shop_name}</p>
-                        {seller.upi_id && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm">UPI: {seller.upi_id}</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(seller.upi_id!)}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Amount: ₹{total.toLocaleString()}
-                        </p>
-                        {seller.payment_instructions && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            {seller.payment_instructions}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
+              <p className="text-sm text-muted-foreground mb-8">
+                {paymentMethod === 'upi' 
+                  ? 'The seller will verify your payment and process your order soon.'
+                  : 'Pay with cash when your order arrives.'}
+              </p>
 
-              <div className="flex gap-4 justify-center mt-8">
+              <div className="flex gap-4 justify-center">
                 <Link to="/my-orders">
                   <Button variant="hero">View Orders</Button>
                 </Link>
@@ -495,7 +505,7 @@ export default function Checkout() {
 
               {/* Step 2: Payment */}
               {step === 2 && (
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                   <Card className="border-border/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -512,56 +522,40 @@ export default function Checkout() {
                       </div>
 
                       <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'upi' | 'cod')}>
-                        <div className="flex items-center gap-3 p-4 border border-border/50 rounded-lg hover:border-primary/50">
-                          <RadioGroupItem value="upi" id="upi" />
-                          <label htmlFor="upi" className="flex items-center gap-2 cursor-pointer flex-1">
-                            <QrCode className="h-5 w-5 text-primary" />
-                            <div>
-                              <p className="font-medium">UPI Payment</p>
-                              <p className="text-sm text-muted-foreground">Pay directly to seller's UPI</p>
-                            </div>
-                          </label>
-                        </div>
-                        <div className="flex items-center gap-3 p-4 border border-border/50 rounded-lg hover:border-primary/50">
-                          <RadioGroupItem value="cod" id="cod" />
-                          <label htmlFor="cod" className="flex items-center gap-2 cursor-pointer flex-1">
-                            <Banknote className="h-5 w-5 text-green-500" />
-                            <div>
-                              <p className="font-medium">Cash on Delivery</p>
-                              <p className="text-sm text-muted-foreground">Pay when you receive</p>
-                            </div>
-                          </label>
-                        </div>
+                        {anyUPIAvailable && (
+                          <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${
+                            paymentMethod === 'upi' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/50'
+                          }`}>
+                            <RadioGroupItem value="upi" id="upi" />
+                            <label htmlFor="upi" className="flex items-center gap-2 cursor-pointer flex-1">
+                              <QrCode className="h-5 w-5 text-primary" />
+                              <div>
+                                <p className="font-medium">UPI Payment</p>
+                                <p className="text-sm text-muted-foreground">Scan QR or use UPI ID to pay</p>
+                              </div>
+                            </label>
+                          </div>
+                        )}
+                        {anyCODAvailable && (
+                          <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${
+                            paymentMethod === 'cod' ? 'border-green-500 bg-green-500/5' : 'border-border/50 hover:border-green-500/50'
+                          }`}>
+                            <RadioGroupItem value="cod" id="cod" />
+                            <label htmlFor="cod" className="flex items-center gap-2 cursor-pointer flex-1">
+                              <Banknote className="h-5 w-5 text-green-500" />
+                              <div>
+                                <p className="font-medium">Cash on Delivery</p>
+                                <p className="text-sm text-muted-foreground">Pay when you receive your order</p>
+                              </div>
+                            </label>
+                          </div>
+                        )}
                       </RadioGroup>
-
-                      {paymentMethod === 'upi' && sellerPayments.length > 0 && (
-                        <div className="space-y-3 mt-4">
-                          <p className="text-sm font-medium">Seller Payment Details:</p>
-                          {sellerPayments.map((seller) => (
-                            <div key={seller.seller_id} className="p-4 bg-muted/50 rounded-lg">
-                              <p className="font-medium">{seller.shop_name}</p>
-                              {seller.upi_id ? (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className="text-sm font-mono bg-background px-2 py-1 rounded">{seller.upi_id}</span>
-                                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(seller.upi_id!)}>
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <p className="text-sm text-muted-foreground mt-1">UPI not configured</p>
-                              )}
-                              {seller.payment_instructions && (
-                                <p className="text-sm text-muted-foreground mt-2">{seller.payment_instructions}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
 
                       <div className="flex gap-3 pt-4">
                         <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
                         <Button variant="hero" className="flex-1" onClick={() => setStep(3)}>
-                          Review Order
+                          Continue to Review
                         </Button>
                       </div>
                     </CardContent>
@@ -569,9 +563,10 @@ export default function Checkout() {
                 </motion.div>
               )}
 
-              {/* Step 3: Review */}
+              {/* Step 3: Review & Pay */}
               {step === 3 && (
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                  {/* Order Summary Card */}
                   <Card className="border-border/50">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -600,7 +595,7 @@ export default function Checkout() {
                       <div>
                         <h3 className="text-sm font-medium mb-2">Payment Method:</h3>
                         <div className="p-3 bg-muted/50 rounded-lg text-sm flex items-center gap-2">
-                          {paymentMethod === 'upi' ? <QrCode className="h-4 w-4" /> : <Banknote className="h-4 w-4" />}
+                          {paymentMethod === 'upi' ? <QrCode className="h-4 w-4 text-primary" /> : <Banknote className="h-4 w-4 text-green-500" />}
                           {paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}
                         </div>
                       </div>
@@ -625,20 +620,68 @@ export default function Checkout() {
                           ))}
                         </div>
                       </div>
+                    </CardContent>
+                  </Card>
 
-                      <div className="flex gap-3 pt-4">
-                        <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                  {/* UPI Payment Section */}
+                  {paymentMethod === 'upi' && sellerCartTotals.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Complete Payment</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Scan the QR code or use the UPI ID to pay the seller(s) directly. 
+                        After payment, enter your transaction ID to confirm.
+                      </p>
+                      
+                      {/* Show QR codes for each seller */}
+                      <div className="grid gap-4">
+                        {sellerCartTotals.map((seller) => (
+                          <PaymentQRCode
+                            key={seller.seller_id}
+                            seller={seller}
+                            amount={seller.amount + (seller.amount === total - shipping ? shipping : 0)}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Payment Confirmation */}
+                      <PaymentConfirmation
+                        onConfirm={handlePlaceOrder}
+                        isSubmitting={isSubmitting}
+                        total={total}
+                      />
+                    </div>
+                  )}
+
+                  {/* COD Confirmation */}
+                  {paymentMethod === 'cod' && (
+                    <Card className="border-green-500/30 bg-gradient-to-br from-green-500/5 to-transparent">
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                            <Banknote className="h-6 w-6 text-green-500" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Cash on Delivery</p>
+                            <p className="text-sm text-muted-foreground">
+                              Pay ₹{total.toLocaleString()} when you receive your order
+                            </p>
+                          </div>
+                        </div>
                         <Button
                           variant="hero"
-                          className="flex-1"
-                          onClick={handlePlaceOrder}
+                          className="w-full"
+                          onClick={handleCODOrder}
                           disabled={isSubmitting}
                         >
                           {isSubmitting ? 'Placing Order...' : `Place Order • ₹${total.toLocaleString()}`}
                         </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Button variant="outline" onClick={() => setStep(2)} className="w-full">
+                    Back to Payment Method
+                  </Button>
                 </motion.div>
               )}
             </div>
