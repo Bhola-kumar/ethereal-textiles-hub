@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,22 @@ import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OrderInvoice from '@/components/order/OrderInvoice';
+import OrderDetailsModal from '@/components/order/OrderDetailsModal';
+
+const statusSteps = [
+  { key: 'pending', label: 'Placed', icon: Clock },
+  { key: 'confirmed', label: 'Confirmed', icon: CheckCircle },
+  { key: 'packed', label: 'Packed', icon: Box },
+  { key: 'shipped', label: 'Shipped', icon: Package },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: Truck },
+  { key: 'delivered', label: 'Delivered', icon: PackageCheck },
+];
+
+const getStatusIndex = (status: string) => {
+  if (status === 'cancelled' || status === 'returned') return -1;
+  return statusSteps.findIndex((s) => s.key === status);
+};
+
 const statusIcons: Record<string, React.ReactNode> = {
   pending: <Clock className="h-4 w-4" />,
   confirmed: <CheckCircle className="h-4 w-4" />,
@@ -49,6 +65,7 @@ export default function MyOrders() {
   const queryClient = useQueryClient();
   const { data: orders, isLoading, refetch } = useOrders(user?.id);
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
+  const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -159,6 +176,44 @@ export default function MyOrders() {
                       </div>
                     </CardHeader>
                     <CardContent>
+                      {/* Visual Order Progress */}
+                      {order.status !== 'cancelled' && order.status !== 'returned' && (
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between relative">
+                            {/* Progress Line Background */}
+                            <div className="absolute top-3 left-0 right-0 h-1 bg-border rounded-full" />
+                            {/* Progress Line Active */}
+                            <div
+                              className="absolute top-3 left-0 h-1 bg-primary rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.max(0, (getStatusIndex(order.status) / (statusSteps.length - 1)) * 100)}%`,
+                              }}
+                            />
+                            {statusSteps.map((step, idx) => {
+                              const Icon = step.icon;
+                              const isCompleted = idx <= getStatusIndex(order.status);
+                              const isCurrent = idx === getStatusIndex(order.status);
+                              return (
+                                <div key={step.key} className="flex flex-col items-center relative z-10">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                                      isCompleted
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-muted-foreground'
+                                    } ${isCurrent ? 'ring-2 ring-primary/40' : ''}`}
+                                  >
+                                    <Icon className="h-3 w-3" />
+                                  </div>
+                                  <span className={`text-[10px] mt-1 hidden sm:block ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                    {step.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Order Items */}
                       <div className="flex flex-wrap gap-4 mb-4">
                         {order.order_items?.slice(0, 4).map((item) => (
@@ -212,7 +267,7 @@ export default function MyOrders() {
                             <FileText className="h-4 w-4 mr-2" />
                             Invoice
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => setDetailsOrder(order)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </Button>
@@ -259,6 +314,23 @@ export default function MyOrders() {
             onOpenChange={(open) => !open && setInvoiceOrder(null)}
           />
         )}
+
+        {/* Order Details Modal */}
+        <OrderDetailsModal
+          order={detailsOrder ? {
+            ...detailsOrder,
+            shipping_address: detailsOrder.shipping_address as any,
+            order_items: detailsOrder.order_items?.map(item => ({
+              id: item.id,
+              product_name: item.product_name,
+              product_image: item.product_image,
+              quantity: item.quantity,
+              price: Number(item.price),
+            })) || [],
+          } : null}
+          open={!!detailsOrder}
+          onOpenChange={(open) => !open && setDetailsOrder(null)}
+        />
       </main>
 
       <Footer />
