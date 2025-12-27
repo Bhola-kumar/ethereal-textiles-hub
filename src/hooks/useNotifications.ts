@@ -34,25 +34,29 @@ export function useNotifications() {
     enabled: !!user,
   });
 
-  // Real-time subscription
+  // Real-time subscription for new notifications
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
-      .channel('user-notifications')
+      .channel(`notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          console.log('Notification update received:', payload);
           queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+          queryClient.invalidateQueries({ queryKey: ['unread-notifications-count', user.id] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Notification subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
