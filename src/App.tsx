@@ -27,6 +27,7 @@ import AdminSellers from "./pages/admin/AdminSellers";
 import AdminFeaturedProducts from "./pages/admin/AdminFeaturedProducts";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminCollections from "./pages/admin/AdminCollections";
+import AdminHomeSections from "./pages/admin/AdminHomeSections";
 import SellerRegister from "./pages/seller/SellerRegister";
 import SellerLayout from "./pages/seller/SellerLayout";
 import SellerDashboard from "./pages/seller/SellerDashboard";
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="featured" element={<AdminFeaturedProducts />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="collections" element={<AdminCollections />} />
+              <Route path="home-sections" element={<AdminHomeSections />} />
             </Route>
             
             {/* Seller Routes */}

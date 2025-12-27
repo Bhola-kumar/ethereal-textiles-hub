@@ -12,13 +12,15 @@ import {
   Store,
   Star,
   FolderOpen,
-  Image
+  Image,
+  Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+  { label: 'Home Sections', icon: Home, href: '/admin/home-sections' },
   { label: 'Products', icon: Package, href: '/admin/products' },
   { label: 'Categories', icon: FolderOpen, href: '/admin/categories' },
   { label: 'Collections', icon: Image, href: '/admin/collections' },
