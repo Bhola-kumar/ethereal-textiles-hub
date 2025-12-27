@@ -208,6 +208,12 @@ export default function SellerOrders() {
   const handleUpdateOrder = async () => {
     if (!selectedOrder) return;
 
+    // Require tracking ID when shipping
+    if (newStatus === 'shipped' && !trackingId.trim()) {
+      toast.error('Tracking ID is required when shipping an order');
+      return;
+    }
+
     setUpdatingOrder(true);
     try {
       const updates: {
@@ -219,8 +225,8 @@ export default function SellerOrders() {
         payment_status: newPaymentStatus as any,
       };
 
-      if (trackingId) {
-        updates.tracking_id = trackingId;
+      if (trackingId.trim()) {
+        updates.tracking_id = trackingId.trim();
       }
 
       const { error } = await supabase
@@ -504,11 +510,6 @@ export default function SellerOrders() {
                               <p className="text-sm text-muted-foreground mt-1">
                                 {order.notes}
                               </p>
-                              {order.tracking_id && (
-                                <p className="text-sm font-mono mt-2 p-2 bg-background rounded">
-                                  Transaction ID: <strong>{order.tracking_id}</strong>
-                                </p>
-                              )}
                               <div className="flex gap-2 mt-3">
                                 <Button
                                   variant="hero"
@@ -680,14 +681,19 @@ export default function SellerOrders() {
             </div>
 
             <div className="space-y-2">
-              <Label>Tracking ID (Optional)</Label>
+              <Label>
+                Tracking ID {newStatus === 'shipped' && <span className="text-destructive">*</span>}
+              </Label>
               <Input
-                placeholder="Enter tracking number"
+                placeholder="Enter shipping tracking number"
                 value={trackingId}
                 onChange={(e) => setTrackingId(e.target.value)}
+                required={newStatus === 'shipped'}
               />
               <p className="text-xs text-muted-foreground">
-                Add tracking ID when shipping the order
+                {newStatus === 'shipped' 
+                  ? 'Tracking ID is required when shipping the order'
+                  : 'Add tracking ID when shipping the order'}
               </p>
             </div>
           </div>

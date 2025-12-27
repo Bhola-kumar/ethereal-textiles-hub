@@ -15,6 +15,8 @@ import {
   RefreshCcw,
   Box,
   PackageCheck,
+  ShoppingCart,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +27,7 @@ import { toast } from 'sonner';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-const orderNumberSchema = z.string().min(5, 'Please enter a valid order number');
+const searchSchema = z.string().min(3, 'Please enter at least 3 characters');
 
 interface OrderData {
   id: string;
@@ -47,12 +49,12 @@ interface OrderData {
 }
 
 const statusSteps = [
-  { key: 'pending', label: 'Order Placed', icon: Clock },
-  { key: 'confirmed', label: 'Confirmed', icon: CheckCircle },
-  { key: 'packed', label: 'Packed', icon: Box },
-  { key: 'shipped', label: 'Shipped', icon: Package },
-  { key: 'out_for_delivery', label: 'Out for Delivery', icon: Truck },
-  { key: 'delivered', label: 'Delivered', icon: PackageCheck },
+  { key: 'pending', label: 'Order Placed', icon: ShoppingCart, description: 'Your order has been received' },
+  { key: 'confirmed', label: 'Confirmed', icon: CheckCircle, description: 'Order confirmed by seller' },
+  { key: 'packed', label: 'Packed', icon: Box, description: 'Your order is being packed' },
+  { key: 'shipped', label: 'Shipped', icon: Package, description: 'Order has been shipped' },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: Truck, description: 'Your order is on the way' },
+  { key: 'delivered', label: 'Delivered', icon: PackageCheck, description: 'Order delivered successfully' },
 ];
 
 const getStatusIndex = (status: string) => {
@@ -63,15 +65,16 @@ const getStatusIndex = (status: string) => {
 export default function TrackOrder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [orderNumber, setOrderNumber] = useState(searchParams.get('order') || '');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('order') || searchParams.get('tracking') || '');
   const [order, setOrder] = useState<OrderData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchType, setSearchType] = useState<'order' | 'tracking'>('order');
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = orderNumberSchema.safeParse(orderNumber.trim());
+    const result = searchSchema.safeParse(searchQuery.trim());
     if (!result.success) {
       toast.error(result.error.errors[0].message);
       return;
@@ -81,17 +84,33 @@ export default function TrackOrder() {
     setHasSearched(true);
 
     try {
-      const { data, error } = await supabase
+      // Try searching by order number first
+      let { data, error } = await supabase
         .from('orders')
         .select('*, order_items(*)')
-        .eq('order_number', orderNumber.trim().toUpperCase())
+        .eq('order_number', searchQuery.trim().toUpperCase())
         .maybeSingle();
+
+      // If not found by order number, try tracking ID
+      if (!data && !error) {
+        const trackingResult = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('tracking_id', searchQuery.trim())
+          .maybeSingle();
+        
+        data = trackingResult.data;
+        error = trackingResult.error;
+        if (data) setSearchType('tracking');
+      } else {
+        setSearchType('order');
+      }
 
       if (error) throw error;
 
       if (!data) {
         setOrder(null);
-        toast.error('Order not found. Please check the order number.');
+        toast.error('Order not found. Please check the order number or tracking ID.');
       } else {
         setOrder(data as OrderData);
       }
@@ -106,6 +125,95 @@ export default function TrackOrder() {
   const currentStatusIndex = order ? getStatusIndex(order.status) : -1;
   const isCancelled = order?.status === 'cancelled';
   const isReturned = order?.status === 'returned';
+
+  // Generate journey timeline
+  const getOrderJourney = () => {
+    if (!order) return [];
+    
+    const journey = [];
+    const orderDate = new Date(order.created_at);
+    const updateDate = new Date(order.updated_at);
+    
+    // Always show order placed
+    journey.push({
+      status: 'Order Placed',
+      description: 'Your order has been received',
+      date: orderDate,
+      icon: ShoppingCart,
+      completed: true,
+    });
+
+    // Add intermediate steps based on current status
+    const currentIdx = getStatusIndex(order.status);
+    
+    if (currentIdx >= 1) {
+      journey.push({
+        status: 'Confirmed',
+        description: 'Order confirmed by seller',
+        date: null, // We don't have exact dates for each step
+        icon: CheckCircle,
+        completed: true,
+      });
+    }
+
+    if (currentIdx >= 2) {
+      journey.push({
+        status: 'Packed',
+        description: 'Order packed and ready for shipping',
+        date: null,
+        icon: Box,
+        completed: true,
+      });
+    }
+
+    if (currentIdx >= 3) {
+      journey.push({
+        status: 'Shipped',
+        description: order.tracking_id ? `Tracking ID: ${order.tracking_id}` : 'Order shipped',
+        date: null,
+        icon: Package,
+        completed: true,
+      });
+    }
+
+    if (currentIdx >= 4) {
+      journey.push({
+        status: 'Out for Delivery',
+        description: 'Your order is on the way',
+        date: null,
+        icon: Truck,
+        completed: true,
+      });
+    }
+
+    if (currentIdx >= 5) {
+      journey.push({
+        status: 'Delivered',
+        description: 'Order delivered successfully',
+        date: updateDate,
+        icon: PackageCheck,
+        completed: true,
+      });
+    }
+
+    // Add next expected step if not delivered
+    if (currentIdx >= 0 && currentIdx < 5 && !isCancelled && !isReturned) {
+      const nextStep = statusSteps[currentIdx + 1];
+      if (nextStep) {
+        journey.push({
+          status: nextStep.label,
+          description: nextStep.description,
+          date: null,
+          icon: nextStep.icon,
+          completed: false,
+        });
+      }
+    }
+
+    return journey;
+  };
+
+  const journey = getOrderJourney();
 
   return (
     <div className="min-h-screen bg-background">
@@ -124,7 +232,7 @@ export default function TrackOrder() {
             </Button>
             <div>
               <h1 className="text-3xl font-display font-bold">Track Order</h1>
-              <p className="text-muted-foreground">Enter your order number to track delivery</p>
+              <p className="text-muted-foreground">Enter your order number or tracking ID</p>
             </div>
           </div>
 
@@ -135,9 +243,9 @@ export default function TrackOrder() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Enter order number (e.g., GD202312150001)"
-                    value={orderNumber}
-                    onChange={(e) => setOrderNumber(e.target.value.toUpperCase())}
+                    placeholder="Enter order number (GD...) or tracking ID"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value.toUpperCase())}
                     className="pl-10"
                   />
                 </div>
@@ -145,6 +253,9 @@ export default function TrackOrder() {
                   {isLoading ? 'Searching...' : 'Track'}
                 </Button>
               </form>
+              <p className="text-xs text-muted-foreground mt-2">
+                You can search using your order number or the shipping tracking ID provided by the seller
+              </p>
             </CardContent>
           </Card>
 
@@ -162,6 +273,11 @@ export default function TrackOrder() {
                       <p className="text-sm text-muted-foreground">
                         Placed on {format(new Date(order.created_at), 'PPP')}
                       </p>
+                      {searchType === 'tracking' && (
+                        <p className="text-xs text-primary mt-1">
+                          Found by tracking ID: {order.tracking_id}
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       {isCancelled && (
@@ -189,6 +305,13 @@ export default function TrackOrder() {
                           {statusSteps[currentStatusIndex]?.label || order.status}
                         </Badge>
                       )}
+                      <Badge className={order.payment_status === 'paid' 
+                        ? 'bg-green-500/20 text-green-500 border border-green-500/30'
+                        : 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30'
+                      }>
+                        <CreditCard className="h-4 w-4 mr-1" />
+                        {order.payment_status}
+                      </Badge>
                     </div>
                   </div>
                 </CardHeader>
@@ -239,11 +362,61 @@ export default function TrackOrder() {
                     </div>
                   )}
 
+                  {/* Order Journey Timeline */}
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Order Journey
+                    </h4>
+                    <div className="space-y-4">
+                      {journey.map((step, index) => {
+                        const Icon = step.icon;
+                        return (
+                          <div key={index} className="flex gap-4">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                step.completed 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'bg-muted text-muted-foreground border-2 border-dashed border-muted-foreground'
+                              }`}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              {index < journey.length - 1 && (
+                                <div className={`w-0.5 h-8 ${
+                                  step.completed ? 'bg-primary' : 'bg-muted'
+                                }`} />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-4">
+                              <p className={`font-medium ${step.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {step.status}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {step.description}
+                              </p>
+                              {step.date && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {format(step.date, 'PPp')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Tracking ID */}
                   {order.tracking_id && (
                     <div className="bg-accent/50 p-4 rounded-lg mb-6">
-                      <p className="text-sm text-muted-foreground">Tracking ID</p>
-                      <p className="font-mono font-medium">{order.tracking_id}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Truck className="h-4 w-4 text-primary" />
+                        <p className="text-sm font-medium">Shipping Tracking ID</p>
+                      </div>
+                      <p className="font-mono text-lg">{order.tracking_id}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use this ID to track your shipment with the courier
+                      </p>
                     </div>
                   )}
 
@@ -327,8 +500,8 @@ export default function TrackOrder() {
                   <XCircle className="h-8 w-8 text-red-500" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Order Not Found</h3>
-                <p className="text-muted-foreground text-center">
-                  We couldn't find an order with that number. Please check and try again.
+                <p className="text-muted-foreground text-center max-w-md">
+                  We couldn't find an order with that number or tracking ID. Please check and try again.
                 </p>
               </CardContent>
             </Card>
