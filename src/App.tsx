@@ -14,6 +14,7 @@ import MyOrders from "./pages/MyOrders";
 import Settings from "./pages/Settings";
 import Collections from "./pages/Collections";
 import About from "./pages/About";
+import ShopPage from "./pages/ShopPage";
 import TrackOrder from "./pages/TrackOrder";
 import Checkout from "./pages/Checkout";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/collections" element={<Collections />} />
             <Route path="/about" element={<About />} />
+            <Route path="/shop/:slug" element={<ShopPage />} />
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/checkout" element={<Checkout />} />
             {/* Admin Routes */}
