@@ -116,15 +116,7 @@ const CategoryCard = ({ category, index }: { category: { id: string; name: strin
 
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"]
-  });
-
-  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
-
+  
   const { data: trendingProducts = [], isLoading: trendingLoading } = useTrendingPublicProducts();
   const { data: newProducts = [], isLoading: newLoading } = useNewPublicProducts();
   const { data: featuredProducts = [], isLoading: featuredLoading } = useFeaturedProducts();
@@ -148,6 +140,17 @@ const Index = () => {
   }, [homeSections]);
 
   const isSectionVisible = (key: string) => key in sectionMap;
+  const isHeroVisible = isSectionVisible('hero');
+
+  // Only use scroll animations when hero is visible
+  const { scrollYProgress } = useScroll({
+    target: isHeroVisible ? heroRef : undefined,
+    offset: ["start start", "end start"]
+  });
+
+  const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   // Dynamic trust badges based on real platform data
   const trustBadges = [
@@ -180,7 +183,7 @@ const Index = () => {
       <Header />
 
       {/* Hero Section */}
-      {isSectionVisible('hero') && (
+      {isHeroVisible && (
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
