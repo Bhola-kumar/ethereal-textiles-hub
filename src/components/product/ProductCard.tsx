@@ -164,13 +164,17 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           <div className="p-4">
             {/* Shop Info */}
             {product.shop_name && (
-              <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
+              <Link 
+                to={`/shop/${product.shop_slug}`} 
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
                 <Store className="h-3 w-3" />
                 <span className="truncate">{product.shop_name}</span>
                 {product.shop_is_verified && (
                   <CheckCircle className="h-3 w-3 text-primary flex-shrink-0" />
                 )}
-              </div>
+              </Link>
             )}
 
             <div className="flex items-center gap-1 mb-2">

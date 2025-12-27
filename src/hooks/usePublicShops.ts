@@ -86,3 +86,22 @@ export function usePublicShop(shopSlug: string) {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function usePublicShopProducts(shopId: string) {
+  return useQuery({
+    queryKey: ['public-shop-products', shopId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products_with_shop')
+        .select('*')
+        .eq('shop_id', shopId)
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!shopId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
