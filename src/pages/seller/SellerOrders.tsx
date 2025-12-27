@@ -57,8 +57,19 @@ interface Order {
   created_at: string;
   notes: string | null;
   tracking_id: string | null;
+  decline_reason: string | null;
+  declined_at: string | null;
   items: OrderItem[];
 }
+
+const declineReasons = [
+  'Item not available in stock',
+  'Payment amount mismatch',
+  'Transaction ID not found',
+  'Duplicate order',
+  'Customer requested cancellation',
+  'Other',
+];
 
 const statusOptions = [
   { value: 'pending', label: 'Pending', icon: Clock },
@@ -84,12 +95,15 @@ export default function SellerOrders() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(false);
   const [trackingId, setTrackingId] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [newPaymentStatus, setNewPaymentStatus] = useState('');
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [shopInfo, setShopInfo] = useState<any>(null);
+  const [declineReason, setDeclineReason] = useState('');
+  const [customDeclineReason, setCustomDeclineReason] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -101,7 +115,7 @@ export default function SellerOrders() {
   const fetchShopInfo = async () => {
     const { data } = await supabase
       .from('shops')
-      .select('shop_name, address, city, state, pincode, phone, email, gst_number')
+      .select('shop_name, address, city, state, pincode, phone, email, gst_number, auto_confirm_orders, auto_confirm_hours')
       .eq('seller_id', user!.id)
       .single();
     
@@ -258,6 +272,40 @@ export default function SellerOrders() {
       fetchOrders();
     } catch (error: any) {
       toast.error(error.message || 'Failed to confirm payment');
+    }
+  };
+
+  const handleDeclineOrder = async () => {
+    if (!selectedOrder) return;
+
+    const finalReason = declineReason === 'Other' ? customDeclineReason : declineReason;
+    if (!finalReason) {
+      toast.error('Please select or enter a reason for declining');
+      return;
+    }
+
+    setUpdatingOrder(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'cancelled',
+          payment_status: 'refunded',
+          decline_reason: finalReason,
+          declined_at: new Date().toISOString()
+        })
+        .eq('id', selectedOrder.id);
+
+      if (error) throw error;
+
+      toast.success('Order declined. Customer has been notified for payment reversal.');
+      setShowDeclineDialog(false);
+      setDeclineReason('');
+      setCustomDeclineReason('');
+      setSelectedOrder(null);
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to decline order');
     }
   };
 
@@ -461,15 +509,27 @@ export default function SellerOrders() {
                                   Transaction ID: <strong>{order.tracking_id}</strong>
                                 </p>
                               )}
-                              <Button
-                                variant="hero"
-                                size="sm"
-                                className="mt-3"
-                                onClick={() => handleConfirmPayment(order.id)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Confirm Payment & Accept Order
-                              </Button>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  variant="hero"
+                                  size="sm"
+                                  onClick={() => handleConfirmPayment(order.id)}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Accept Order
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setShowDeclineDialog(true);
+                                  }}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Decline Order
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -486,15 +546,27 @@ export default function SellerOrders() {
                               <p className="text-sm text-muted-foreground mt-1">
                                 Payment will be collected upon delivery.
                               </p>
-                              <Button
-                                variant="hero"
-                                size="sm"
-                                className="mt-3"
-                                onClick={() => handleQuickStatusUpdate(order.id, 'confirmed')}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Accept Order
-                              </Button>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  variant="hero"
+                                  size="sm"
+                                  onClick={() => handleQuickStatusUpdate(order.id, 'confirmed')}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Accept Order
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOrder(order);
+                                    setShowDeclineDialog(true);
+                                  }}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Decline Order
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -630,6 +702,65 @@ export default function SellerOrders() {
               disabled={updatingOrder}
             >
               {updatingOrder ? 'Updating...' : 'Update Order'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Decline Order Dialog */}
+      <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Decline Order</DialogTitle>
+            <DialogDescription>
+              This will cancel the order and notify the customer to request a payment refund.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Reason for Declining</Label>
+              <Select value={declineReason} onValueChange={setDeclineReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  {declineReasons.map(reason => (
+                    <SelectItem key={reason} value={reason}>{reason}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {declineReason === 'Other' && (
+              <div className="space-y-2">
+                <Label>Custom Reason</Label>
+                <Input
+                  placeholder="Enter reason for declining"
+                  value={customDeclineReason}
+                  onChange={(e) => setCustomDeclineReason(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                <strong>Payment Reversal:</strong> The customer will be notified to contact you for payment refund. 
+                Please process the refund manually via UPI or bank transfer.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeclineDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeclineOrder}
+              disabled={updatingOrder || (!declineReason || (declineReason === 'Other' && !customDeclineReason))}
+            >
+              {updatingOrder ? 'Declining...' : 'Decline Order'}
             </Button>
           </DialogFooter>
         </DialogContent>

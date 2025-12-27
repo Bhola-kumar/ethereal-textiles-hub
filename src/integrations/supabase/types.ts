@@ -375,6 +375,8 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          decline_reason: string | null
+          declined_at: string | null
           discount: number | null
           id: string
           notes: string | null
@@ -391,6 +393,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
           discount?: number | null
           id?: string
           notes?: string | null
@@ -407,6 +411,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
           discount?: number | null
           id?: string
           notes?: string | null
@@ -582,6 +588,8 @@ export type Database = {
         Row: {
           accepts_cod: boolean | null
           address: string | null
+          auto_confirm_hours: number | null
+          auto_confirm_orders: boolean | null
           bank_account_name: string | null
           bank_account_number: string | null
           bank_ifsc: string | null
@@ -615,6 +623,8 @@ export type Database = {
         Insert: {
           accepts_cod?: boolean | null
           address?: string | null
+          auto_confirm_hours?: number | null
+          auto_confirm_orders?: boolean | null
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_ifsc?: string | null
@@ -648,6 +658,8 @@ export type Database = {
         Update: {
           accepts_cod?: boolean | null
           address?: string | null
+          auto_confirm_hours?: number | null
+          auto_confirm_orders?: boolean | null
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_ifsc?: string | null

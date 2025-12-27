@@ -21,7 +21,9 @@ import {
   Upload,
   Truck,
   Percent,
-  X
+  X,
+  Clock,
+  Zap
 } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -65,6 +67,11 @@ export default function SellerSettings() {
     charge_gst: false,
     convenience_charge: 0,
     charge_convenience: false,
+  });
+
+  const [autoConfirmForm, setAutoConfirmForm] = useState({
+    auto_confirm_orders: false,
+    auto_confirm_hours: 24,
   });
 
   const [uploadingQr, setUploadingQr] = useState(false);
@@ -114,6 +121,10 @@ export default function SellerSettings() {
         charge_gst: data.charge_gst ?? false,
         convenience_charge: Number(data.convenience_charge) || 0,
         charge_convenience: data.charge_convenience ?? false,
+      });
+      setAutoConfirmForm({
+        auto_confirm_orders: data.auto_confirm_orders ?? false,
+        auto_confirm_hours: data.auto_confirm_hours ?? 24,
       });
     }
     setLoading(false);
@@ -210,6 +221,26 @@ export default function SellerSettings() {
       toast.error('Failed to update charges');
     } else {
       toast.success('Charges settings updated');
+    }
+  };
+
+  const handleSaveAutoConfirm = async () => {
+    if (!shop) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from('shops')
+      .update({
+        auto_confirm_orders: autoConfirmForm.auto_confirm_orders,
+        auto_confirm_hours: autoConfirmForm.auto_confirm_hours,
+      })
+      .eq('id', shop.id);
+
+    setSaving(false);
+    if (error) {
+      toast.error('Failed to update auto-confirmation settings');
+    } else {
+      toast.success('Auto-confirmation settings updated');
     }
   };
 
@@ -321,6 +352,10 @@ export default function SellerSettings() {
             <TabsTrigger value="charges" className="gap-2">
               <Truck className="h-4 w-4" />
               Charges
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="gap-2">
+              <Zap className="h-4 w-4" />
+              Automation
             </TabsTrigger>
           </TabsList>
 
@@ -723,6 +758,78 @@ export default function SellerSettings() {
               <Button onClick={handleSaveCharges} disabled={saving} variant="hero" size="lg">
                 <Save className="h-4 w-4 mr-2" />
                 Save Charges Settings
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Automation Tab */}
+          <TabsContent value="automation">
+            <div className="space-y-6">
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    Auto-Confirmation Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Automatically confirm orders after a specified time period
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <p className="text-sm">
+                      <strong>How it works:</strong> When enabled, pending orders will be automatically 
+                      confirmed after the specified time period. This is useful for COD orders or when 
+                      you trust the payment verification process.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="auto_confirm_orders"
+                      checked={autoConfirmForm.auto_confirm_orders}
+                      onCheckedChange={(checked) => setAutoConfirmForm({ 
+                        ...autoConfirmForm, 
+                        auto_confirm_orders: checked as boolean 
+                      })}
+                    />
+                    <Label htmlFor="auto_confirm_orders" className="font-normal cursor-pointer">
+                      Enable auto-confirmation of orders
+                    </Label>
+                  </div>
+
+                  {autoConfirmForm.auto_confirm_orders && (
+                    <div>
+                      <Label>Auto-confirm after (hours)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="168"
+                        value={autoConfirmForm.auto_confirm_hours}
+                        onChange={(e) => setAutoConfirmForm({ 
+                          ...autoConfirmForm, 
+                          auto_confirm_hours: Number(e.target.value) 
+                        })}
+                        placeholder="24"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Orders will be auto-confirmed after this many hours (1-168 hours / 1 week max)
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                      <strong>Note:</strong> Auto-confirmation only applies to pending orders. 
+                      You can still manually confirm or decline orders at any time before the auto-confirmation period.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button onClick={handleSaveAutoConfirm} disabled={saving} variant="hero" size="lg">
+                <Save className="h-4 w-4 mr-2" />
+                Save Automation Settings
               </Button>
             </div>
           </TabsContent>
