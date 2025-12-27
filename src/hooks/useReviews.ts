@@ -2,6 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export interface ReviewReply {
+  id: string;
+  review_id: string;
+  user_id: string | null;
+  is_seller: boolean;
+  content: string;
+  created_at: string;
+  profiles?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 export interface Review {
   id: string;
   product_id: string;
@@ -13,11 +26,14 @@ export interface Review {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
+  replies?: ReviewReply[];
+  likes_count?: number;
+  user_has_liked?: boolean;
 }
 
-export function useProductReviews(productId: string) {
+export function useProductReviews(productId: string, currentUserId?: string) {
   return useQuery({
-    queryKey: ['reviews', productId],
+    queryKey: ['reviews', productId, currentUserId],
     queryFn: async () => {
       const { data: reviewsData, error } = await supabase
         .from('reviews')
@@ -48,10 +64,77 @@ export function useProductReviews(productId: string) {
         }
       }
 
-      // Merge reviews with profiles
+      // Fetch replies for all reviews
+      const reviewIds = reviewsData?.map(r => r.id) || [];
+      let repliesMap: Record<string, ReviewReply[]> = {};
+      
+      if (reviewIds.length > 0) {
+        const { data: repliesData } = await supabase
+          .from('review_replies')
+          .select('*')
+          .in('review_id', reviewIds)
+          .order('created_at', { ascending: true });
+
+        if (repliesData && repliesData.length > 0) {
+          // Get profiles for reply authors
+          const replyUserIds = repliesData.filter(r => r.user_id).map(r => r.user_id);
+          let replyProfilesMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {};
+          
+          if (replyUserIds.length > 0) {
+            const { data: replyProfiles } = await supabase
+              .from('profiles')
+              .select('user_id, full_name, avatar_url')
+              .in('user_id', replyUserIds);
+
+            if (replyProfiles) {
+              replyProfilesMap = replyProfiles.reduce((acc, p) => {
+                acc[p.user_id] = { full_name: p.full_name, avatar_url: p.avatar_url };
+                return acc;
+              }, {} as Record<string, { full_name: string | null; avatar_url: string | null }>);
+            }
+          }
+
+          repliesData.forEach(reply => {
+            if (!repliesMap[reply.review_id]) {
+              repliesMap[reply.review_id] = [];
+            }
+            repliesMap[reply.review_id].push({
+              ...reply,
+              profiles: reply.user_id ? replyProfilesMap[reply.user_id] || null : null,
+            });
+          });
+        }
+      }
+
+      // Fetch likes count and user's like status
+      let likesMap: Record<string, { count: number; userLiked: boolean }> = {};
+      
+      if (reviewIds.length > 0) {
+        const { data: likesData } = await supabase
+          .from('review_likes')
+          .select('review_id, user_id')
+          .in('review_id', reviewIds);
+
+        if (likesData) {
+          likesData.forEach(like => {
+            if (!likesMap[like.review_id]) {
+              likesMap[like.review_id] = { count: 0, userLiked: false };
+            }
+            likesMap[like.review_id].count++;
+            if (currentUserId && like.user_id === currentUserId) {
+              likesMap[like.review_id].userLiked = true;
+            }
+          });
+        }
+      }
+
+      // Merge reviews with profiles, replies, and likes
       const reviews: Review[] = (reviewsData || []).map(r => ({
         ...r,
         profiles: r.user_id ? profilesMap[r.user_id] || null : null,
+        replies: repliesMap[r.id] || [],
+        likes_count: likesMap[r.id]?.count || 0,
+        user_has_liked: likesMap[r.id]?.userLiked || false,
       }));
 
       return reviews;
@@ -131,6 +214,93 @@ export function useCreateReview() {
   });
 }
 
+export function useCreateReviewReply() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      reviewId,
+      userId,
+      content,
+      isSeller,
+      productId,
+    }: {
+      reviewId: string;
+      userId: string;
+      content: string;
+      isSeller: boolean;
+      productId: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('review_replies')
+        .insert({
+          review_id: reviewId,
+          user_id: userId,
+          content,
+          is_seller: isSeller,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, productId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['reviews', result.productId] });
+      toast.success('Reply posted successfully!');
+    },
+    onError: () => {
+      toast.error('Failed to post reply');
+    },
+  });
+}
+
+export function useToggleReviewLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      reviewId,
+      userId,
+      isLiked,
+      productId,
+    }: {
+      reviewId: string;
+      userId: string;
+      isLiked: boolean;
+      productId: string;
+    }) => {
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('review_likes')
+          .delete()
+          .eq('review_id', reviewId)
+          .eq('user_id', userId);
+
+        if (error) throw error;
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('review_likes')
+          .insert({
+            review_id: reviewId,
+            user_id: userId,
+          });
+
+        if (error) throw error;
+      }
+      return { productId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['reviews', result.productId] });
+    },
+    onError: () => {
+      toast.error('Failed to update like');
+    },
+  });
+}
+
 export function useUserCanReview(productId: string, userId: string | undefined) {
   return useQuery({
     queryKey: ['can-review', productId, userId],
@@ -168,6 +338,24 @@ export function useUserCanReview(productId: string, userId: string | undefined) 
         hasOrdered,
         hasReviewed,
       };
+    },
+    enabled: !!productId && !!userId,
+  });
+}
+
+export function useIsProductSeller(productId: string, userId: string | undefined) {
+  return useQuery({
+    queryKey: ['is-product-seller', productId, userId],
+    queryFn: async () => {
+      if (!userId) return false;
+
+      const { data } = await supabase
+        .from('products')
+        .select('seller_id')
+        .eq('id', productId)
+        .maybeSingle();
+
+      return data?.seller_id === userId;
     },
     enabled: !!productId && !!userId,
   });
