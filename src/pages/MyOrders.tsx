@@ -1,19 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
-import { useOrders } from '@/hooks/useOrders';
+import { useOrders, Order } from '@/hooks/useOrders';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-
+import OrderInvoice from '@/components/order/OrderInvoice';
 const statusIcons: Record<string, React.ReactNode> = {
   pending: <Clock className="h-4 w-4" />,
   confirmed: <CheckCircle className="h-4 w-4" />,
@@ -48,6 +48,7 @@ export default function MyOrders() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: orders, isLoading, refetch } = useOrders(user?.id);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -206,10 +207,16 @@ export default function MyOrders() {
                             </div>
                           )}
                         </div>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setInvoiceOrder(order)}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Invoice
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -233,6 +240,25 @@ export default function MyOrders() {
             </Card>
           )}
         </motion.div>
+
+        {/* Invoice Modal */}
+        {invoiceOrder && (
+          <OrderInvoice
+            order={{
+              ...invoiceOrder,
+              shipping_address: invoiceOrder.shipping_address as any,
+              order_items: invoiceOrder.order_items?.map(item => ({
+                id: item.id,
+                product_name: item.product_name,
+                product_image: item.product_image,
+                quantity: item.quantity,
+                price: Number(item.price),
+              })),
+            }}
+            open={!!invoiceOrder}
+            onOpenChange={(open) => !open && setInvoiceOrder(null)}
+          />
+        )}
       </main>
 
       <Footer />

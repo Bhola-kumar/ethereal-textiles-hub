@@ -31,9 +31,11 @@ import {
   CreditCard,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
+import OrderInvoice from '@/components/order/OrderInvoice';
 
 interface OrderItem {
   id: string;
@@ -86,12 +88,25 @@ export default function SellerOrders() {
   const [trackingId, setTrackingId] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [newPaymentStatus, setNewPaymentStatus] = useState('');
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
+  const [shopInfo, setShopInfo] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
       fetchOrders();
+      fetchShopInfo();
     }
   }, [user]);
+
+  const fetchShopInfo = async () => {
+    const { data } = await supabase
+      .from('shops')
+      .select('shop_name, address, city, state, pincode, phone, email, gst_number')
+      .eq('seller_id', user!.id)
+      .single();
+    
+    if (data) setShopInfo(data);
+  };
 
   const fetchOrders = async () => {
     try {
@@ -388,6 +403,14 @@ export default function SellerOrders() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setInvoiceOrder(order)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Invoice
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleOpenUpdateDialog(order)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
@@ -611,6 +634,29 @@ export default function SellerOrders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Modal */}
+      {invoiceOrder && (
+        <OrderInvoice
+          order={{
+            id: invoiceOrder.id,
+            order_number: invoiceOrder.order_number,
+            created_at: invoiceOrder.created_at,
+            status: invoiceOrder.status,
+            payment_status: invoiceOrder.payment_status,
+            subtotal: invoiceOrder.subtotal,
+            shipping_cost: invoiceOrder.shipping_cost,
+            total: invoiceOrder.total,
+            shipping_address: invoiceOrder.shipping_address,
+            notes: invoiceOrder.notes,
+            tracking_id: invoiceOrder.tracking_id,
+            items: invoiceOrder.items,
+          }}
+          shopInfo={shopInfo}
+          open={!!invoiceOrder}
+          onOpenChange={(open) => !open && setInvoiceOrder(null)}
+        />
+      )}
     </div>
   );
 }
