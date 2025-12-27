@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Star, User, MessageSquare, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Star, User, MessageSquare, Loader2, ThumbsUp, ChevronDown, ChevronUp, Store, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useProductReviews, useCreateReview, useUserCanReview } from '@/hooks/useReviews';
+import { Badge } from '@/components/ui/badge';
+import { 
+  useProductReviews, 
+  useCreateReview, 
+  useUserCanReview, 
+  useCreateReviewReply, 
+  useToggleReviewLike,
+  useIsProductSeller,
+  Review 
+} from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -15,10 +24,222 @@ interface ProductReviewsProps {
   productName: string;
 }
 
+function ReviewCard({ 
+  review, 
+  productId, 
+  currentUserId, 
+  isSeller 
+}: { 
+  review: Review; 
+  productId: string;
+  currentUserId?: string;
+  isSeller: boolean;
+}) {
+  const [showReplies, setShowReplies] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  
+  const createReply = useCreateReviewReply();
+  const toggleLike = useToggleReviewLike();
+
+  const handleLike = () => {
+    if (!currentUserId) return;
+    toggleLike.mutate({
+      reviewId: review.id,
+      userId: currentUserId,
+      isLiked: review.user_has_liked || false,
+      productId,
+    });
+  };
+
+  const handleSubmitReply = async () => {
+    if (!currentUserId || !replyContent.trim()) return;
+    
+    await createReply.mutateAsync({
+      reviewId: review.id,
+      userId: currentUserId,
+      content: replyContent.trim(),
+      isSeller,
+      productId,
+    });
+    
+    setReplyContent('');
+    setShowReplyForm(false);
+    setShowReplies(true);
+  };
+
+  const repliesCount = review.replies?.length || 0;
+
+  return (
+    <Card className="bg-card/50 border-border/50">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          <Avatar>
+            <AvatarImage src={review.profiles?.avatar_url || undefined} />
+            <AvatarFallback>
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">
+                  {review.profiles?.full_name || 'Anonymous'}
+                </span>
+                <Badge variant="outline" className="text-xs">
+                  Verified Purchase
+                </Badge>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {format(new Date(review.created_at), 'MMM d, yyyy')}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 mb-2">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < review.rating
+                      ? 'fill-primary text-primary'
+                      : 'fill-muted text-muted'
+                  }`}
+                />
+              ))}
+            </div>
+            {review.comment && (
+              <p className="text-muted-foreground mb-3">{review.comment}</p>
+            )}
+
+            {/* Actions Row */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`text-xs gap-1.5 ${review.user_has_liked ? 'text-primary' : 'text-muted-foreground'}`}
+                onClick={handleLike}
+                disabled={!currentUserId || toggleLike.isPending}
+              >
+                <ThumbsUp className={`h-3.5 w-3.5 ${review.user_has_liked ? 'fill-primary' : ''}`} />
+                Helpful ({review.likes_count || 0})
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs gap-1.5 text-muted-foreground"
+                onClick={() => setShowReplyForm(!showReplyForm)}
+                disabled={!currentUserId}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Reply
+              </Button>
+
+              {repliesCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs gap-1.5 text-muted-foreground"
+                  onClick={() => setShowReplies(!showReplies)}
+                >
+                  {showReplies ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  {repliesCount} {repliesCount === 1 ? 'Reply' : 'Replies'}
+                </Button>
+              )}
+            </div>
+
+            {/* Reply Form */}
+            <AnimatePresence>
+              {showReplyForm && currentUserId && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 overflow-hidden"
+                >
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      placeholder={isSeller ? "Reply as seller..." : "Ask a question or add a comment..."}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="icon"
+                      variant="hero"
+                      onClick={handleSubmitReply}
+                      disabled={!replyContent.trim() || createReply.isPending}
+                    >
+                      {createReply.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Replies List */}
+            <AnimatePresence>
+              {showReplies && review.replies && review.replies.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-4 space-y-3 border-l-2 border-border/50 pl-4 overflow-hidden"
+                >
+                  {review.replies.map((reply) => (
+                    <div key={reply.id} className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8">
+                        {reply.is_seller ? (
+                          <AvatarFallback className="bg-primary/20">
+                            <Store className="h-3 w-3 text-primary" />
+                          </AvatarFallback>
+                        ) : (
+                          <>
+                            <AvatarImage src={reply.profiles?.avatar_url || undefined} />
+                            <AvatarFallback>
+                              <User className="h-3 w-3" />
+                            </AvatarFallback>
+                          </>
+                        )}
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">
+                            {reply.is_seller ? 'Seller' : (reply.profiles?.full_name || 'Anonymous')}
+                          </span>
+                          {reply.is_seller && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Store className="h-2.5 w-2.5 mr-1" />
+                              Seller Response
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(reply.created_at), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{reply.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ProductReviews({ productId, productName }: ProductReviewsProps) {
   const { user } = useAuth();
-  const { data: reviews = [], isLoading } = useProductReviews(productId);
+  const { data: reviews = [], isLoading } = useProductReviews(productId, user?.id);
   const { data: reviewPermission } = useUserCanReview(productId, user?.id);
+  const { data: isSeller = false } = useIsProductSeller(productId, user?.id);
   const createReview = useCreateReview();
 
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -223,43 +444,12 @@ export default function ProductReviews({ productId, productName }: ProductReview
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <Card className="bg-card/50 border-border/50">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-4">
-                            <Avatar>
-                              <AvatarImage src={review.profiles?.avatar_url || undefined} />
-                              <AvatarFallback>
-                                <User className="h-4 w-4" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium">
-                                  {review.profiles?.full_name || 'Anonymous'}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(review.created_at), 'MMM d, yyyy')}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 mb-2">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`h-4 w-4 ${
-                                      i < review.rating
-                                        ? 'fill-primary text-primary'
-                                        : 'fill-muted text-muted'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              {review.comment && (
-                                <p className="text-muted-foreground">{review.comment}</p>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <ReviewCard 
+                        review={review} 
+                        productId={productId}
+                        currentUserId={user?.id}
+                        isSeller={isSeller}
+                      />
                     </motion.div>
                   ))}
                 </div>
