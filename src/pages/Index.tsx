@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Award, Truck, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useFeaturedCollections } from '@/hooks/useFeaturedCollections';
 import { useCategories } from '@/hooks/useCategories';
 import { usePublicShops } from '@/hooks/usePublicShops';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
+import { useVisibleHomeSections } from '@/hooks/useHomeSections';
 import ProductCard from '@/components/product/ProductCard';
 import ShopBySellerCard from '@/components/home/ShopBySellerCard';
 import Header from '@/components/layout/Header';
@@ -132,9 +133,21 @@ const Index = () => {
   const { data: shops = [], isLoading: shopsLoading } = usePublicShops(8);
   const { data: platformStats } = usePlatformStats();
   const { data: featuredCollections = [], isLoading: collectionsLoading } = useFeaturedCollections();
+  const { data: homeSections = [] } = useVisibleHomeSections();
 
   // Fallback to first 6 products if no admin-curated featured products exist
   const displayFeaturedProducts = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 6);
+
+  // Create a map of section visibility for easy lookup
+  const sectionMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    homeSections.forEach((section, index) => {
+      map[section.section_key] = index;
+    });
+    return map;
+  }, [homeSections]);
+
+  const isSectionVisible = (key: string) => key in sectionMap;
 
   // Dynamic trust badges based on real platform data
   const trustBadges = [
@@ -167,6 +180,7 @@ const Index = () => {
       <Header />
 
       {/* Hero Section */}
+      {isSectionVisible('hero') && (
       <motion.section
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
@@ -281,8 +295,10 @@ const Index = () => {
           </motion.div>
         </motion.div>
       </motion.section>
+      )}
 
       {/* Categories Section */}
+      {isSectionVisible('categories') && (
       <section className="py-12 lg:py-20 bg-charcoal-dark">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
@@ -329,8 +345,10 @@ const Index = () => {
           )}
         </div>
       </section>
+      )}
 
       {/* Shop by Sellers Section */}
+      {isSectionVisible('sellers') && (
       <section className="py-12 lg:py-20">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
@@ -372,90 +390,98 @@ const Index = () => {
           )}
         </div>
       </section>
+      )}
 
       {/* Trending Products */}
+      {isSectionVisible('trending') && (
       <ProductCarousel
         title="🔥 Trending Now"
         products={trendingProducts}
         viewAllLink="/products?filter=trending"
         isLoading={trendingLoading}
       />
+      )}
 
       {/* Featured Collections - Dynamic from Admin */}
-      {collectionsLoading ? (
-        <section className="py-12 lg:py-20">
-          <div className="container mx-auto px-4">
-            <Skeleton className="h-64 rounded-3xl" />
-          </div>
-        </section>
-      ) : featuredCollections.length > 0 ? (
-        featuredCollections.map((collection, index) => (
-          <section key={collection.id} className="py-12 lg:py-20">
+      {isSectionVisible('featured_collections') && (
+        collectionsLoading ? (
+          <section className="py-12 lg:py-20">
             <div className="container mx-auto px-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-charcoal-light to-charcoal-dark border border-border/50"
-              >
-                <div className="absolute top-0 right-0 w-1/2 h-full">
-                  {collection.image_url && (
-                    <img
-                      src={collection.image_url}
-                      alt={collection.title}
-                      className="w-full h-full object-cover opacity-30"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-charcoal-dark to-transparent" />
-                </div>
-                
-                {/* Glow */}
-                <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
-
-                <div className="relative z-10 p-8 lg:p-16 max-w-2xl">
-                  {collection.badge_text && (
-                    <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
-                      {collection.badge_text}
-                    </span>
-                  )}
-                  <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
-                    {collection.subtitle ? (
-                      <>
-                        {collection.subtitle}
-                        <br />
-                        <span className="gradient-text">{collection.title}</span>
-                      </>
-                    ) : (
-                      <span className="gradient-text">{collection.title}</span>
-                    )}
-                  </h2>
-                  {collection.description && (
-                    <p className="text-muted-foreground mb-8 max-w-md">
-                      {collection.description}
-                    </p>
-                  )}
-                  <Link to={collection.link_url}>
-                    <Button variant="hero" size="lg">
-                      {collection.link_text}
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
+              <Skeleton className="h-64 rounded-3xl" />
             </div>
           </section>
-        ))
-      ) : null}
+        ) : featuredCollections.length > 0 ? (
+          featuredCollections.map((collection) => (
+            <section key={collection.id} className="py-12 lg:py-20">
+              <div className="container mx-auto px-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-charcoal-light to-charcoal-dark border border-border/50"
+                >
+                  <div className="absolute top-0 right-0 w-1/2 h-full">
+                    {collection.image_url && (
+                      <img
+                        src={collection.image_url}
+                        alt={collection.title}
+                        className="w-full h-full object-cover opacity-30"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-r from-charcoal-dark to-transparent" />
+                  </div>
+                  
+                  {/* Glow */}
+                  <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
+
+                  <div className="relative z-10 p-8 lg:p-16 max-w-2xl">
+                    {collection.badge_text && (
+                      <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
+                        {collection.badge_text}
+                      </span>
+                    )}
+                    <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
+                      {collection.subtitle ? (
+                        <>
+                          {collection.subtitle}
+                          <br />
+                          <span className="gradient-text">{collection.title}</span>
+                        </>
+                      ) : (
+                        <span className="gradient-text">{collection.title}</span>
+                      )}
+                    </h2>
+                    {collection.description && (
+                      <p className="text-muted-foreground mb-8 max-w-md">
+                        {collection.description}
+                      </p>
+                    )}
+                    <Link to={collection.link_url}>
+                      <Button variant="hero" size="lg">
+                        {collection.link_text}
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+          ))
+        ) : null
+      )}
 
       {/* New Arrivals */}
+      {isSectionVisible('new_arrivals') && (
       <ProductCarousel
         title="✨ New Arrivals"
         products={newProducts}
         viewAllLink="/products?filter=new"
         isLoading={newLoading}
       />
+      )}
 
       {/* Featured Products */}
+      {isSectionVisible('featured_products') && (
       <section className="py-12 lg:py-20 bg-charcoal-dark">
         <div className="container mx-auto px-4">
           <motion.div
@@ -501,8 +527,10 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Trust Badges */}
+      {isSectionVisible('trust_badges') && (
       <section className="py-12 lg:py-16 border-t border-border/30">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -524,6 +552,7 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       <Footer />
     </div>
