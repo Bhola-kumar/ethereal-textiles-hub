@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,12 @@ import {
   MapPin, 
   Save,
   Building2,
-  Wallet
+  Wallet,
+  QrCode,
+  Upload,
+  Truck,
+  Percent,
+  X
 } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 
@@ -50,7 +55,20 @@ export default function SellerSettings() {
     bank_account_name: '',
     bank_account_number: '',
     bank_ifsc: '',
+    payment_qr_url: '',
   });
+
+  const [chargesForm, setChargesForm] = useState({
+    shipping_charge: 0,
+    free_shipping_above: null as number | null,
+    gst_percentage: 0,
+    charge_gst: false,
+    convenience_charge: 0,
+    charge_convenience: false,
+  });
+
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -87,6 +105,15 @@ export default function SellerSettings() {
         bank_account_name: data.bank_account_name || '',
         bank_account_number: data.bank_account_number || '',
         bank_ifsc: data.bank_ifsc || '',
+        payment_qr_url: data.payment_qr_url || '',
+      });
+      setChargesForm({
+        shipping_charge: Number(data.shipping_charge) || 0,
+        free_shipping_above: data.free_shipping_above ? Number(data.free_shipping_above) : null,
+        gst_percentage: Number(data.gst_percentage) || 0,
+        charge_gst: data.charge_gst ?? false,
+        convenience_charge: Number(data.convenience_charge) || 0,
+        charge_convenience: data.charge_convenience ?? false,
       });
     }
     setLoading(false);
@@ -150,6 +177,7 @@ export default function SellerSettings() {
         bank_account_name: paymentForm.bank_account_name || null,
         bank_account_number: paymentForm.bank_account_number || null,
         bank_ifsc: paymentForm.bank_ifsc || null,
+        payment_qr_url: paymentForm.payment_qr_url || null,
       })
       .eq('id', shop.id);
 
@@ -159,6 +187,89 @@ export default function SellerSettings() {
     } else {
       toast.success('Payment settings updated');
     }
+  };
+
+  const handleSaveCharges = async () => {
+    if (!shop) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from('shops')
+      .update({
+        shipping_charge: chargesForm.shipping_charge,
+        free_shipping_above: chargesForm.free_shipping_above,
+        gst_percentage: chargesForm.gst_percentage,
+        charge_gst: chargesForm.charge_gst,
+        convenience_charge: chargesForm.convenience_charge,
+        charge_convenience: chargesForm.charge_convenience,
+      })
+      .eq('id', shop.id);
+
+    setSaving(false);
+    if (error) {
+      toast.error('Failed to update charges');
+    } else {
+      toast.success('Charges settings updated');
+    }
+  };
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !shop) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size should be less than 2MB');
+      return;
+    }
+
+    setUploadingQr(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${shop.id}-qr.${fileExt}`;
+      const filePath = `payment-qr/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setPaymentForm({ ...paymentForm, payment_qr_url: publicUrl });
+
+      await supabase
+        .from('shops')
+        .update({ payment_qr_url: publicUrl })
+        .eq('id', shop.id);
+
+      toast.success('QR code uploaded successfully');
+    } catch (error: any) {
+      toast.error('Failed to upload QR code: ' + error.message);
+    } finally {
+      setUploadingQr(false);
+    }
+  };
+
+  const handleRemoveQr = async () => {
+    if (!shop) return;
+
+    setPaymentForm({ ...paymentForm, payment_qr_url: '' });
+
+    await supabase
+      .from('shops')
+      .update({ payment_qr_url: null })
+      .eq('id', shop.id);
+
+    toast.success('QR code removed');
   };
 
   if (loading) {
@@ -194,7 +305,7 @@ export default function SellerSettings() {
         </div>
 
         <Tabs defaultValue="shop" className="space-y-6">
-          <TabsList className="bg-muted/50">
+          <TabsList className="bg-muted/50 flex-wrap h-auto gap-1">
             <TabsTrigger value="shop" className="gap-2">
               <Store className="h-4 w-4" />
               Shop Info
@@ -206,6 +317,10 @@ export default function SellerSettings() {
             <TabsTrigger value="payment" className="gap-2">
               <CreditCard className="h-4 w-4" />
               Payment
+            </TabsTrigger>
+            <TabsTrigger value="charges" className="gap-2">
+              <Truck className="h-4 w-4" />
+              Charges
             </TabsTrigger>
           </TabsList>
 
@@ -356,6 +471,57 @@ export default function SellerSettings() {
                     </p>
                   </div>
 
+                  {/* QR Code Upload */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <QrCode className="h-4 w-4" />
+                      Payment QR Code
+                    </Label>
+                    
+                    {paymentForm.payment_qr_url ? (
+                      <div className="relative inline-block">
+                        <img 
+                          src={paymentForm.payment_qr_url} 
+                          alt="Payment QR Code" 
+                          className="w-48 h-48 object-contain border border-border rounded-lg bg-white"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={handleRemoveQr}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="w-48 h-48 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => qrInputRef.current?.click()}
+                      >
+                        {uploadingQr ? (
+                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                            <span className="text-sm text-muted-foreground">Upload QR Code</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
+                    <input
+                      ref={qrInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleQrUpload}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Upload your UPI QR code for customers to scan and pay
+                    </p>
+                  </div>
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="accepts_cod"
@@ -431,6 +597,132 @@ export default function SellerSettings() {
               <Button onClick={handleSavePayment} disabled={saving} variant="hero" size="lg">
                 <Save className="h-4 w-4 mr-2" />
                 Save Payment Settings
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Charges Tab */}
+          <TabsContent value="charges">
+            <div className="space-y-6">
+              {/* Shipping Charges */}
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-primary" />
+                    Shipping Charges
+                  </CardTitle>
+                  <CardDescription>
+                    Configure shipping fees for your orders
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Shipping Charge (₹)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={chargesForm.shipping_charge}
+                        onChange={(e) => setChargesForm({ ...chargesForm, shipping_charge: Number(e.target.value) })}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Flat shipping fee per order
+                      </p>
+                    </div>
+                    <div>
+                      <Label>Free Shipping Above (₹)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={chargesForm.free_shipping_above || ''}
+                        onChange={(e) => setChargesForm({ 
+                          ...chargesForm, 
+                          free_shipping_above: e.target.value ? Number(e.target.value) : null 
+                        })}
+                        placeholder="No limit"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Free shipping for orders above this amount
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* GST Settings */}
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Percent className="h-5 w-5 text-primary" />
+                    GST & Additional Charges
+                  </CardTitle>
+                  <CardDescription>
+                    Configure tax and convenience fees
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Checkbox
+                      id="charge_gst"
+                      checked={chargesForm.charge_gst}
+                      onCheckedChange={(checked) => setChargesForm({ ...chargesForm, charge_gst: checked as boolean })}
+                    />
+                    <Label htmlFor="charge_gst" className="font-normal cursor-pointer">
+                      Charge GST on orders
+                    </Label>
+                  </div>
+
+                  {chargesForm.charge_gst && (
+                    <div>
+                      <Label>GST Percentage (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="28"
+                        step="0.1"
+                        value={chargesForm.gst_percentage}
+                        onChange={(e) => setChargesForm({ ...chargesForm, gst_percentage: Number(e.target.value) })}
+                        placeholder="18"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Standard GST rates: 5%, 12%, 18%, 28%
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-2 mt-4">
+                    <Checkbox
+                      id="charge_convenience"
+                      checked={chargesForm.charge_convenience}
+                      onCheckedChange={(checked) => setChargesForm({ ...chargesForm, charge_convenience: checked as boolean })}
+                    />
+                    <Label htmlFor="charge_convenience" className="font-normal cursor-pointer">
+                      Charge Convenience Fee
+                    </Label>
+                  </div>
+
+                  {chargesForm.charge_convenience && (
+                    <div>
+                      <Label>Convenience Charge (₹)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={chargesForm.convenience_charge}
+                        onChange={(e) => setChargesForm({ ...chargesForm, convenience_charge: Number(e.target.value) })}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Fixed convenience fee per order
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Button onClick={handleSaveCharges} disabled={saving} variant="hero" size="lg">
+                <Save className="h-4 w-4 mr-2" />
+                Save Charges Settings
               </Button>
             </div>
           </TabsContent>
