@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
-import { useCart, useClearCart } from '@/hooks/useCart';
+import { useCartStore, getProductImage } from '@/store/cartStore';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,8 +63,7 @@ const addressSchema = z.object({
 export default function Checkout() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { data: cartItems, isLoading: cartLoading } = useCart();
-  const clearCart = useClearCart();
+  const { items: cartItems, clearCart, getCartTotal } = useCartStore();
   
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -122,9 +121,9 @@ export default function Checkout() {
   };
 
   const fetchSellerPaymentInfo = async () => {
-    if (!cartItems) return;
+    if (!cartItems || cartItems.length === 0) return;
     
-    const sellerIds = [...new Set(cartItems.map(item => item.products.seller_id).filter(Boolean))];
+    const sellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
     
     if (sellerIds.length === 0) return;
 
@@ -139,10 +138,10 @@ export default function Checkout() {
       // Calculate totals per seller
       const totalsMap = new Map<string, number>();
       cartItems.forEach(item => {
-        const sellerId = item.products.seller_id;
+        const sellerId = item.seller_id;
         if (sellerId) {
           const current = totalsMap.get(sellerId) || 0;
-          totalsMap.set(sellerId, current + (item.products.price * item.quantity));
+          totalsMap.set(sellerId, current + (item.price * item.quantity));
         }
       });
 
@@ -207,7 +206,7 @@ export default function Checkout() {
 
     setIsSubmitting(true);
     try {
-      const subtotal = cartItems.reduce((sum, item) => sum + item.products.price * item.quantity, 0);
+      const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
       const shipping = subtotal > 999 ? 0 : 99;
       const total = subtotal + shipping;
 
@@ -243,11 +242,11 @@ export default function Checkout() {
       // Create order items
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
-        product_id: item.products.id,
-        product_name: item.products.name,
-        product_image: item.products.images?.[0] || null,
+        product_id: item.id,
+        product_name: item.name,
+        product_image: getProductImage(item),
         quantity: item.quantity,
-        price: item.products.price,
+        price: item.price,
       }));
 
       const { error: itemsError } = await supabase
@@ -257,7 +256,7 @@ export default function Checkout() {
       if (itemsError) throw itemsError;
 
       // Clear cart
-      await clearCart.mutateAsync();
+      clearCart();
 
       setOrderNumber(order.order_number);
       setOrderComplete(true);
@@ -273,7 +272,7 @@ export default function Checkout() {
     handlePlaceOrder();
   };
 
-  const subtotal = cartItems?.reduce((sum, item) => sum + item.products.price * item.quantity, 0) || 0;
+  const subtotal = getCartTotal();
   const shipping = subtotal > 999 ? 0 : 99;
   const total = subtotal + shipping;
 
@@ -282,7 +281,7 @@ export default function Checkout() {
   // Check if any seller has UPI configured
   const anyUPIAvailable = sellerPayments.some(s => s.upi_id || s.payment_qr_url);
 
-  if (authLoading || cartLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary" />
@@ -607,15 +606,15 @@ export default function Checkout() {
                           {cartItems?.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                               <img
-                                src={item.products.images?.[0] || '/placeholder.svg'}
-                                alt={item.products.name}
+                                src={getProductImage(item)}
+                                alt={item.name}
                                 className="w-12 h-12 rounded object-cover"
                               />
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{item.products.name}</p>
+                                <p className="font-medium text-sm">{item.name}</p>
                                 <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                               </div>
-                              <p className="font-medium">₹{(item.products.price * item.quantity).toLocaleString()}</p>
+                              <p className="font-medium">₹{(item.price * item.quantity).toLocaleString()}</p>
                             </div>
                           ))}
                         </div>
@@ -696,14 +695,14 @@ export default function Checkout() {
                   {cartItems?.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <img
-                        src={item.products.images?.[0] || '/placeholder.svg'}
-                        alt={item.products.name}
+                        src={getProductImage(item)}
+                        alt={item.name}
                         className="w-16 h-16 rounded object-cover"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-clamp-1">{item.products.name}</p>
+                        <p className="text-sm font-medium line-clamp-1">{item.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                        <p className="text-sm font-medium">₹{(item.products.price * item.quantity).toLocaleString()}</p>
+                        <p className="text-sm font-medium">₹{(item.price * item.quantity).toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
