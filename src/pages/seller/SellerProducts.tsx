@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Package, Search, ImagePlus, X, Save, Star, FolderPlus } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Search, X, Save, Star, FolderPlus } from 'lucide-react';
+import ProductImageUpload from '@/components/product/ProductImageUpload';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -99,7 +100,7 @@ export default function SellerProducts() {
     color: '',
     pattern: '',
     stock: '',
-    images: '',
+    images: [] as string[],
     care_instructions: '',
     is_published: false,
     is_trending: false,
@@ -220,7 +221,7 @@ export default function SellerProducts() {
     setFormData({
       name: '', description: '', price: '', original_price: '',
       category_id: '', fabric: '', color: '', pattern: '', stock: '',
-      images: '', care_instructions: '', is_published: false, is_trending: false, is_new: true,
+      images: [], care_instructions: '', is_published: false, is_trending: false, is_new: true,
     });
     setEditingProduct(null);
     setShowNewCategoryInput(false);
@@ -244,7 +245,7 @@ export default function SellerProducts() {
       color: product.color || '',
       pattern: product.pattern || '',
       stock: product.stock.toString(),
-      images: product.images?.join(', ') || '',
+      images: product.images || [],
       care_instructions: product.care_instructions?.join(', ') || '',
       is_published: product.is_published || false,
       is_trending: product.is_trending || false,
@@ -292,7 +293,7 @@ export default function SellerProducts() {
 
     setIsSubmitting(true);
     try {
-      const imageUrls = formData.images.split(',').map(s => s.trim()).filter(Boolean);
+      const imageUrls = formData.images;
       const careInstructions = formData.care_instructions.split(',').map(s => s.trim()).filter(Boolean);
 
       const productData = {
@@ -684,19 +685,10 @@ export default function SellerProducts() {
                       </div>
                     </div>
 
-                    <div>
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        <ImagePlus className="h-4 w-4" /> Image URLs
-                      </Label>
-                      <Textarea 
-                        value={formData.images} 
-                        onChange={e => setFormData({...formData, images: e.target.value})} 
-                        placeholder="https://image1.jpg, https://image2.jpg"
-                        rows={2}
-                        className="mt-1.5"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">Separate multiple URLs with commas</p>
-                    </div>
+                    <ProductImageUpload 
+                      images={formData.images}
+                      onImagesChange={(images) => setFormData({...formData, images})}
+                    />
 
                     <div>
                       <Label className="text-sm font-medium">Care Instructions</Label>
