@@ -127,8 +127,8 @@ const Index = () => {
   const { data: featuredCollections = [], isLoading: collectionsLoading } = useFeaturedCollections();
   const { data: homeSections = [] } = useVisibleHomeSections();
 
-  // Fallback to first 6 products if no admin-curated featured products exist
-  const displayFeaturedProducts = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 6);
+  // Only show admin-curated featured products (no fallback)
+  const displayFeaturedProducts = featuredProducts;
 
   // Create a map of section visibility for easy lookup
   const sectionMap = useMemo(() => {
