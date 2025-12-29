@@ -132,10 +132,25 @@ export default function Checkout() {
   const fetchSellerPaymentInfo = async () => {
     if (!cartItems || cartItems.length === 0) return;
     
-    const sellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
+    // First try to get seller_ids from cart items
+    let sellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
+    
+    // If no seller IDs in cart items, fetch from products table using product IDs
+    if (sellerIds.length === 0) {
+      const productIds = cartItems.map(item => item.id);
+      const { data: productData } = await supabase
+        .from('products')
+        .select('seller_id')
+        .in('id', productIds)
+        .not('seller_id', 'is', null);
+      
+      if (productData && productData.length > 0) {
+        sellerIds = [...new Set(productData.map(p => p.seller_id).filter(Boolean))] as string[];
+      }
+    }
     
     if (sellerIds.length === 0) {
-      // If no seller IDs found, still allow COD as fallback
+      // If still no seller IDs found, allow COD as fallback
       setSellerPayments([{
         seller_id: 'unknown',
         shop_name: 'Seller',

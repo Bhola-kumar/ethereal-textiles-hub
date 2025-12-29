@@ -90,6 +90,7 @@ const ProductDetail = () => {
       isTrending: product.is_trending || false,
       inStock: (product.stock || 0) > 0,
       care: product.care_instructions || [],
+      seller_id: product.seller_id || undefined,
       shop_name: product.shop_name || undefined,
       shop_slug: product.shop_slug || undefined,
       shop_is_verified: product.shop_is_verified || undefined,
@@ -121,6 +122,10 @@ const ProductDetail = () => {
       isTrending: product.is_trending || false,
       inStock: (product.stock || 0) > 0,
       care: product.care_instructions || [],
+      seller_id: product.seller_id || undefined,
+      shop_name: product.shop_name || undefined,
+      shop_slug: product.shop_slug || undefined,
+      shop_is_verified: product.shop_is_verified || undefined,
     };
     
     if (inWishlist) {
