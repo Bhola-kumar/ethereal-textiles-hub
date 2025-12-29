@@ -134,83 +134,157 @@ export default function Checkout() {
     
     const sellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
     
-    if (sellerIds.length === 0) return;
+    if (sellerIds.length === 0) {
+      // If no seller IDs found, still allow COD as fallback
+      setSellerPayments([{
+        seller_id: 'unknown',
+        shop_name: 'Seller',
+        upi_id: null,
+        accepts_cod: true,
+        payment_instructions: null,
+        payment_qr_url: null,
+        shipping_charge: 0,
+        free_shipping_above: null,
+        gst_percentage: 0,
+        charge_gst: false,
+        convenience_charge: 0,
+        charge_convenience: false,
+      }]);
+      return;
+    }
 
-    // Use the public view that's accessible to all users for checkout
-    const { data } = await supabase
-      .from('shops_payment_public' as any)
-      .select('seller_id, shop_name, upi_id, accepts_cod, payment_instructions, payment_qr_url, shipping_charge, free_shipping_above, gst_percentage, charge_gst, convenience_charge, charge_convenience')
-      .in('seller_id', sellerIds);
+    try {
+      // Use the public view that's accessible to all users for checkout
+      const { data, error } = await supabase
+        .from('shops_payment_public')
+        .select('seller_id, shop_name, upi_id, accepts_cod, payment_instructions, payment_qr_url, shipping_charge, free_shipping_above, gst_percentage, charge_gst, convenience_charge, charge_convenience, is_active')
+        .in('seller_id', sellerIds)
+        .eq('is_active', true);
 
-    if (data && Array.isArray(data)) {
-      const shopData = data as unknown as Array<{
-        seller_id: string;
-        shop_name: string;
-        upi_id: string | null;
-        accepts_cod: boolean | null;
-        payment_instructions: string | null;
-        payment_qr_url: string | null;
-        shipping_charge: number | null;
-        free_shipping_above: number | null;
-        gst_percentage: number | null;
-        charge_gst: boolean | null;
-        convenience_charge: number | null;
-        charge_convenience: boolean | null;
-      }>;
-      
-      setSellerPayments(shopData.map(s => ({
-        ...s,
-        shipping_charge: Number(s.shipping_charge) || 0,
-        free_shipping_above: s.free_shipping_above ? Number(s.free_shipping_above) : null,
-        gst_percentage: Number(s.gst_percentage) || 0,
-        charge_gst: s.charge_gst ?? false,
-        convenience_charge: Number(s.convenience_charge) || 0,
-        charge_convenience: s.charge_convenience ?? false,
-      })));
-      
-      // Calculate totals per seller with charges
-      const totalsMap = new Map<string, number>();
-      cartItems.forEach(item => {
-        const sellerId = item.seller_id;
-        if (sellerId) {
-          const current = totalsMap.get(sellerId) || 0;
-          totalsMap.set(sellerId, current + (item.price * item.quantity));
-        }
-      });
+      if (error) {
+        console.error('Error fetching seller payment info:', error);
+        // Fallback to COD if query fails
+        setSellerPayments([{
+          seller_id: sellerIds[0],
+          shop_name: 'Seller',
+          upi_id: null,
+          accepts_cod: true,
+          payment_instructions: null,
+          payment_qr_url: null,
+          shipping_charge: 0,
+          free_shipping_above: null,
+          gst_percentage: 0,
+          charge_gst: false,
+          convenience_charge: 0,
+          charge_convenience: false,
+        }]);
+        return;
+      }
 
-      const sellerTotals: SellerCartTotal[] = shopData.map(seller => {
-        const sellerSubtotal = totalsMap.get(seller.seller_id) || 0;
-        const shippingCharge = Number(seller.shipping_charge) || 0;
-        const freeShippingAbove = seller.free_shipping_above ? Number(seller.free_shipping_above) : null;
-        const chargeGst = seller.charge_gst ?? false;
-        const gstPercentage = Number(seller.gst_percentage) || 0;
-        const chargeConvenience = seller.charge_convenience ?? false;
-        const convenienceCharge = Number(seller.convenience_charge) || 0;
-
-        // Calculate shipping (free if above threshold)
-        const finalShipping = freeShippingAbove && sellerSubtotal >= freeShippingAbove ? 0 : shippingCharge;
+      if (data && Array.isArray(data) && data.length > 0) {
+        const shopData = data as unknown as Array<{
+          seller_id: string;
+          shop_name: string;
+          upi_id: string | null;
+          accepts_cod: boolean | null;
+          payment_instructions: string | null;
+          payment_qr_url: string | null;
+          shipping_charge: number | null;
+          free_shipping_above: number | null;
+          gst_percentage: number | null;
+          charge_gst: boolean | null;
+          convenience_charge: number | null;
+          charge_convenience: boolean | null;
+        }>;
         
-        // Calculate GST
-        const gstAmount = chargeGst ? (sellerSubtotal * gstPercentage / 100) : 0;
+        setSellerPayments(shopData.map(s => ({
+          ...s,
+          shipping_charge: Number(s.shipping_charge) || 0,
+          free_shipping_above: s.free_shipping_above ? Number(s.free_shipping_above) : null,
+          gst_percentage: Number(s.gst_percentage) || 0,
+          charge_gst: s.charge_gst ?? false,
+          convenience_charge: Number(s.convenience_charge) || 0,
+          charge_convenience: s.charge_convenience ?? false,
+        })));
         
-        // Calculate convenience fee
-        const finalConvenience = chargeConvenience ? convenienceCharge : 0;
+        // Calculate totals per seller with charges
+        const totalsMap = new Map<string, number>();
+        cartItems.forEach(item => {
+          const sellerId = item.seller_id;
+          if (sellerId) {
+            const current = totalsMap.get(sellerId) || 0;
+            totalsMap.set(sellerId, current + (item.price * item.quantity));
+          }
+        });
 
-        return {
-          seller_id: seller.seller_id,
-          shop_name: seller.shop_name,
-          amount: sellerSubtotal,
-          upi_id: seller.upi_id,
-          payment_qr_url: seller.payment_qr_url,
-          payment_instructions: seller.payment_instructions,
-          accepts_cod: seller.accepts_cod,
-          shipping_charge: finalShipping,
-          gst_amount: gstAmount,
-          convenience_charge: finalConvenience,
-        };
-      });
-      
-      setSellerCartTotals(sellerTotals);
+        const sellerTotals: SellerCartTotal[] = shopData.map(seller => {
+          const sellerSubtotal = totalsMap.get(seller.seller_id) || 0;
+          const shippingCharge = Number(seller.shipping_charge) || 0;
+          const freeShippingAbove = seller.free_shipping_above ? Number(seller.free_shipping_above) : null;
+          const chargeGst = seller.charge_gst ?? false;
+          const gstPercentage = Number(seller.gst_percentage) || 0;
+          const chargeConvenience = seller.charge_convenience ?? false;
+          const convenienceCharge = Number(seller.convenience_charge) || 0;
+
+          // Calculate shipping (free if above threshold)
+          const finalShipping = freeShippingAbove && sellerSubtotal >= freeShippingAbove ? 0 : shippingCharge;
+          
+          // Calculate GST
+          const gstAmount = chargeGst ? (sellerSubtotal * gstPercentage / 100) : 0;
+          
+          // Calculate convenience fee
+          const finalConvenience = chargeConvenience ? convenienceCharge : 0;
+
+          return {
+            seller_id: seller.seller_id,
+            shop_name: seller.shop_name,
+            amount: sellerSubtotal,
+            upi_id: seller.upi_id,
+            payment_qr_url: seller.payment_qr_url,
+            payment_instructions: seller.payment_instructions,
+            accepts_cod: seller.accepts_cod,
+            shipping_charge: finalShipping,
+            gst_amount: gstAmount,
+            convenience_charge: finalConvenience,
+          };
+        });
+        
+        setSellerCartTotals(sellerTotals);
+      } else {
+        // No seller data found - provide fallback with COD
+        console.warn('No seller payment info found for sellers:', sellerIds);
+        setSellerPayments([{
+          seller_id: sellerIds[0],
+          shop_name: 'Seller',
+          upi_id: null,
+          accepts_cod: true,
+          payment_instructions: null,
+          payment_qr_url: null,
+          shipping_charge: 0,
+          free_shipping_above: null,
+          gst_percentage: 0,
+          charge_gst: false,
+          convenience_charge: 0,
+          charge_convenience: false,
+        }]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch seller payment info:', err);
+      // Fallback to COD on any error
+      setSellerPayments([{
+        seller_id: sellerIds[0] || 'unknown',
+        shop_name: 'Seller',
+        upi_id: null,
+        accepts_cod: true,
+        payment_instructions: null,
+        payment_qr_url: null,
+        shipping_charge: 0,
+        free_shipping_above: null,
+        gst_percentage: 0,
+        charge_gst: false,
+        convenience_charge: 0,
+        charge_convenience: false,
+      }]);
     }
   };
 
@@ -330,8 +404,8 @@ export default function Checkout() {
   const totalConvenience = sellerCartTotals.reduce((sum, s) => sum + s.convenience_charge, 0);
   const total = subtotal + totalShipping + totalGst + totalConvenience;
 
-  // Check if any seller accepts COD
-  const anyCODAvailable = sellerPayments.some(s => s.accepts_cod !== false);
+  // Check if any seller accepts COD - default to true if no seller info (fallback)
+  const anyCODAvailable = sellerPayments.length === 0 || sellerPayments.some(s => s.accepts_cod !== false);
   // Check if any seller has UPI configured
   const anyUPIAvailable = sellerPayments.some(s => s.upi_id || s.payment_qr_url);
 
