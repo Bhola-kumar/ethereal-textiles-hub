@@ -987,6 +987,14 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_order_total: {
+        Args: {
+          p_product_ids: string[]
+          p_quantities: number[]
+          p_seller_ids: string[]
+        }
+        Returns: Json
+      }
       grant_seller_role: { Args: never; Returns: undefined }
       has_role: {
         Args: {
