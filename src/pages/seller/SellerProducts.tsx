@@ -47,6 +47,12 @@ interface Product {
   pattern: string | null;
   category_id: string | null;
   care_instructions: string[] | null;
+  length: number | null;
+  width: number | null;
+  gsm: number | null;
+  size: string | null;
+  available_colors: string[] | null;
+  available_sizes: string[] | null;
 }
 
 const productSchema = z.object({
@@ -105,6 +111,12 @@ export default function SellerProducts() {
     is_published: false,
     is_trending: false,
     is_new: true,
+    length: '',
+    width: '',
+    gsm: '',
+    size: '',
+    available_colors: '',
+    available_sizes: '',
   });
 
   useEffect(() => {
@@ -222,6 +234,7 @@ export default function SellerProducts() {
       name: '', description: '', price: '', original_price: '',
       category_id: '', fabric: '', color: '', pattern: '', stock: '',
       images: [], care_instructions: '', is_published: false, is_trending: false, is_new: true,
+      length: '', width: '', gsm: '', size: '', available_colors: '', available_sizes: '',
     });
     setEditingProduct(null);
     setShowNewCategoryInput(false);
@@ -250,6 +263,12 @@ export default function SellerProducts() {
       is_published: product.is_published || false,
       is_trending: product.is_trending || false,
       is_new: product.is_new || false,
+      length: product.length?.toString() || '',
+      width: product.width?.toString() || '',
+      gsm: product.gsm?.toString() || '',
+      size: product.size || '',
+      available_colors: product.available_colors?.join(', ') || '',
+      available_sizes: product.available_sizes?.join(', ') || '',
     });
     setShowForm(true);
   };
@@ -295,6 +314,8 @@ export default function SellerProducts() {
     try {
       const imageUrls = formData.images;
       const careInstructions = formData.care_instructions.split(',').map(s => s.trim()).filter(Boolean);
+      const availableColors = formData.available_colors.split(',').map(s => s.trim()).filter(Boolean);
+      const availableSizes = formData.available_sizes.split(',').map(s => s.trim()).filter(Boolean);
 
       const productData = {
         name: formData.name.trim(),
@@ -313,6 +334,12 @@ export default function SellerProducts() {
         is_trending: formData.is_trending,
         is_new: formData.is_new,
         seller_id: user!.id,
+        length: formData.length ? parseFloat(formData.length) : null,
+        width: formData.width ? parseFloat(formData.width) : null,
+        gsm: formData.gsm ? parseInt(formData.gsm) : null,
+        size: formData.size.trim() || null,
+        available_colors: availableColors.length > 0 ? availableColors : null,
+        available_sizes: availableSizes.length > 0 ? availableSizes : null,
       };
 
       if (editingProduct) {
@@ -666,7 +693,7 @@ export default function SellerProducts() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="text-sm font-medium">Color</Label>
+                        <Label className="text-sm font-medium">Primary Color</Label>
                         <Input 
                           value={formData.color} 
                           onChange={e => setFormData({...formData, color: e.target.value})} 
@@ -682,6 +709,84 @@ export default function SellerProducts() {
                           placeholder="Checkered"
                           className="mt-1.5"
                         />
+                      </div>
+                    </div>
+
+                    {/* Dimensions Section */}
+                    <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
+                      <Label className="text-sm font-medium text-foreground">Product Dimensions</Label>
+                      <div className="grid grid-cols-4 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Length (cm)</Label>
+                          <Input 
+                            type="number"
+                            step="0.1"
+                            value={formData.length} 
+                            onChange={e => setFormData({...formData, length: e.target.value})} 
+                            placeholder="150"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Width (cm)</Label>
+                          <Input 
+                            type="number"
+                            step="0.1"
+                            value={formData.width} 
+                            onChange={e => setFormData({...formData, width: e.target.value})} 
+                            placeholder="75"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">GSM</Label>
+                          <Input 
+                            type="number"
+                            value={formData.gsm} 
+                            onChange={e => setFormData({...formData, gsm: e.target.value})} 
+                            placeholder="180"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Size</Label>
+                          <Input 
+                            value={formData.size} 
+                            onChange={e => setFormData({...formData, size: e.target.value})} 
+                            placeholder="Large"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Available Variants Section */}
+                    <div className="bg-accent/30 rounded-lg p-4 space-y-4">
+                      <Label className="text-sm font-medium text-foreground">Available Variants</Label>
+                      <p className="text-xs text-muted-foreground -mt-2">
+                        Add multiple colors and sizes this product is available in
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Available Colors</Label>
+                          <Input 
+                            value={formData.available_colors} 
+                            onChange={e => setFormData({...formData, available_colors: e.target.value})} 
+                            placeholder="Red, Blue, Green, White"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">Comma separated</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Available Sizes</Label>
+                          <Input 
+                            value={formData.available_sizes} 
+                            onChange={e => setFormData({...formData, available_sizes: e.target.value})} 
+                            placeholder="S, M, L, XL"
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">Comma separated</p>
+                        </div>
                       </div>
                     </div>
 
