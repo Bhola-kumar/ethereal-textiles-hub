@@ -305,6 +305,27 @@ const ProductDetail = () => {
                 </p>
               </div>
 
+              {/* Product Specifications */}
+              {(product.length || product.width || product.gsm || product.size) && (
+                <div className="flex flex-wrap gap-3">
+                  {product.length && product.width && (
+                    <span className="px-3 py-1.5 bg-secondary rounded-lg text-sm">
+                      <span className="text-muted-foreground">Size:</span> {product.length} × {product.width} cm
+                    </span>
+                  )}
+                  {product.gsm && (
+                    <span className="px-3 py-1.5 bg-secondary rounded-lg text-sm">
+                      <span className="text-muted-foreground">GSM:</span> {product.gsm}
+                    </span>
+                  )}
+                  {product.size && (
+                    <span className="px-3 py-1.5 bg-secondary rounded-lg text-sm">
+                      <span className="text-muted-foreground">Size:</span> {product.size}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Price */}
               <div className="flex items-baseline gap-3">
                 <span className="text-3xl font-bold gradient-text">
@@ -327,6 +348,40 @@ const ProductDetail = () => {
                 <p className="text-muted-foreground leading-relaxed">
                   {product.description}
                 </p>
+              )}
+
+              {/* Available Colors */}
+              {product.available_colors && product.available_colors.length > 0 && (
+                <div className="space-y-2">
+                  <span className="font-medium">Available Colors:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {product.available_colors.map((color, index) => (
+                      <span 
+                        key={index}
+                        className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-sm cursor-pointer transition-colors border border-border/50"
+                      >
+                        {color}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Available Sizes */}
+              {product.available_sizes && product.available_sizes.length > 0 && (
+                <div className="space-y-2">
+                  <span className="font-medium">Available Sizes:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {product.available_sizes.map((size, index) => (
+                      <span 
+                        key={index}
+                        className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-sm cursor-pointer transition-colors border border-border/50"
+                      >
+                        {size}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Stock Status */}

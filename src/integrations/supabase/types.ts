@@ -461,17 +461,21 @@ export type Database = {
       }
       products: {
         Row: {
+          available_colors: string[] | null
+          available_sizes: string[] | null
           care_instructions: string[] | null
           category_id: string | null
           color: string | null
           created_at: string
           description: string | null
           fabric: string | null
+          gsm: number | null
           id: string
           images: string[] | null
           is_new: boolean | null
           is_published: boolean | null
           is_trending: boolean | null
+          length: number | null
           name: string
           original_price: number | null
           pattern: string | null
@@ -479,22 +483,28 @@ export type Database = {
           rating: number | null
           reviews_count: number | null
           seller_id: string | null
+          size: string | null
           slug: string
           stock: number
           updated_at: string
+          width: number | null
         }
         Insert: {
+          available_colors?: string[] | null
+          available_sizes?: string[] | null
           care_instructions?: string[] | null
           category_id?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
           fabric?: string | null
+          gsm?: number | null
           id?: string
           images?: string[] | null
           is_new?: boolean | null
           is_published?: boolean | null
           is_trending?: boolean | null
+          length?: number | null
           name: string
           original_price?: number | null
           pattern?: string | null
@@ -502,22 +512,28 @@ export type Database = {
           rating?: number | null
           reviews_count?: number | null
           seller_id?: string | null
+          size?: string | null
           slug: string
           stock?: number
           updated_at?: string
+          width?: number | null
         }
         Update: {
+          available_colors?: string[] | null
+          available_sizes?: string[] | null
           care_instructions?: string[] | null
           category_id?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
           fabric?: string | null
+          gsm?: number | null
           id?: string
           images?: string[] | null
           is_new?: boolean | null
           is_published?: boolean | null
           is_trending?: boolean | null
+          length?: number | null
           name?: string
           original_price?: number | null
           pattern?: string | null
@@ -525,9 +541,11 @@ export type Database = {
           rating?: number | null
           reviews_count?: number | null
           seller_id?: string | null
+          size?: string | null
           slug?: string
           stock?: number
           updated_at?: string
+          width?: number | null
         }
         Relationships: [
           {
@@ -847,17 +865,21 @@ export type Database = {
     Views: {
       products_with_shop: {
         Row: {
+          available_colors: string[] | null
+          available_sizes: string[] | null
           care_instructions: string[] | null
           category_id: string | null
           color: string | null
           created_at: string | null
           description: string | null
           fabric: string | null
+          gsm: number | null
           id: string | null
           images: string[] | null
           is_new: boolean | null
           is_published: boolean | null
           is_trending: boolean | null
+          length: number | null
           name: string | null
           original_price: number | null
           pattern: string | null
@@ -872,9 +894,11 @@ export type Database = {
           shop_name: string | null
           shop_slug: string | null
           shop_state: string | null
+          size: string | null
           slug: string | null
           stock: number | null
           updated_at: string | null
+          width: number | null
         }
         Relationships: [
           {

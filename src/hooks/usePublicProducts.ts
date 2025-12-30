@@ -24,6 +24,12 @@ export type ProductWithShop = {
   seller_id: string | null;
   created_at: string;
   updated_at: string;
+  length: number | null;
+  width: number | null;
+  gsm: number | null;
+  size: string | null;
+  available_colors: string[] | null;
+  available_sizes: string[] | null;
   categories?: Tables<'categories'> | null;
   shop_id?: string | null;
   shop_name?: string | null;
@@ -108,6 +114,12 @@ export function usePublicProducts(filters?: {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        length: p.length,
+        width: p.width,
+        gsm: p.gsm,
+        size: p.size,
+        available_colors: p.available_colors,
+        available_sizes: p.available_sizes,
         shop_id: p.shop_id,
         shop_name: p.shop_name,
         shop_slug: p.shop_slug,
@@ -166,6 +178,12 @@ export function usePublicProduct(slug: string) {
         seller_id: product.seller_id,
         created_at: product.created_at!,
         updated_at: product.updated_at!,
+        length: product.length,
+        width: product.width,
+        gsm: product.gsm,
+        size: product.size,
+        available_colors: product.available_colors,
+        available_sizes: product.available_sizes,
         shop_id: product.shop_id,
         shop_name: product.shop_name,
         shop_slug: product.shop_slug,
@@ -224,6 +242,12 @@ export function useTrendingPublicProducts() {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        length: p.length,
+        width: p.width,
+        gsm: p.gsm,
+        size: p.size,
+        available_colors: p.available_colors,
+        available_sizes: p.available_sizes,
         shop_id: p.shop_id,
         shop_name: p.shop_name,
         shop_slug: p.shop_slug,
@@ -273,6 +297,12 @@ export function useNewPublicProducts() {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        length: p.length,
+        width: p.width,
+        gsm: p.gsm,
+        size: p.size,
+        available_colors: p.available_colors,
+        available_sizes: p.available_sizes,
         shop_id: p.shop_id,
         shop_name: p.shop_name,
         shop_slug: p.shop_slug,
@@ -321,6 +351,12 @@ export function useShopProducts(shopSlug: string) {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        length: p.length,
+        width: p.width,
+        gsm: p.gsm,
+        size: p.size,
+        available_colors: p.available_colors,
+        available_sizes: p.available_sizes,
         shop_id: p.shop_id,
         shop_name: p.shop_name,
         shop_slug: p.shop_slug,
