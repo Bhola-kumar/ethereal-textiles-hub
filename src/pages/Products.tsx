@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, ChevronDown, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,12 @@ import ProductCard from '@/components/product/ProductCard';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSearchParams } from 'react-router-dom';
+
+interface FilterOption {
+  label: string;
+  value: string;
+}
 
 const FilterSection = ({
   title,
@@ -16,7 +22,7 @@ const FilterSection = ({
   onSelect,
 }: {
   title: string;
-  options: string[];
+  options: FilterOption[];
   selected: string[];
   onSelect: (option: string) => void;
 }) => {
@@ -43,16 +49,16 @@ const FilterSection = ({
           >
             {options.map((option) => (
               <label
-                key={option}
+                key={option.value}
                 className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <input
                   type="checkbox"
-                  checked={selected.includes(option)}
-                  onChange={() => onSelect(option)}
+                  checked={selected.includes(option.value)}
+                  onChange={() => onSelect(option.value)}
                   className="h-4 w-4 rounded border-border bg-secondary accent-primary"
                 />
-                {option}
+                {option.label}
               </label>
             ))}
           </motion.div>
@@ -63,10 +69,14 @@ const FilterSection = ({
 };
 
 const Products = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
   const [sortBy, setSortBy] = useState('popularity');
+
+  // Initialize from URL params
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
   const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedPatterns, setSelectedPatterns] = useState<string[]>([]);
@@ -74,6 +84,17 @@ const Products = () => {
 
   const { data: products = [], isLoading } = usePublicProducts();
   const { data: categories = [] } = useCategories();
+
+  // Sync with URL params on mount
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    } else {
+      // If no URL param, ensure state is clear (e.g. if navigating back)
+      setSelectedCategories([]);
+    }
+  }, [searchParams]);
 
   const toggleFilter = (list: string[], item: string, setter: (items: string[]) => void) => {
     if (list.includes(item)) {
@@ -88,16 +109,25 @@ const Products = () => {
     const fabrics = [...new Set(products.map(p => p.fabric).filter(Boolean))] as string[];
     const colors = [...new Set(products.map(p => p.color).filter(Boolean))] as string[];
     const patterns = [...new Set(products.map(p => p.pattern).filter(Boolean))] as string[];
-    return { fabrics, colors, patterns };
+
+    return {
+      fabrics: fabrics.map(f => ({ label: f, value: f })),
+      colors: colors.map(c => ({ label: c, value: c })),
+      patterns: patterns.map(p => ({ label: p, value: p }))
+    };
   }, [products]);
+
+  const categoryOptions = useMemo(() => {
+    return categories.map(c => ({ label: c.name, value: c.id }));
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
     if (selectedCategories.length > 0) {
       result = result.filter((p) => {
-        const categoryName = p.categories?.name;
-        return categoryName && selectedCategories.includes(categoryName);
+        // Filter by ID instead of name
+        return p.category_id && selectedCategories.includes(p.category_id);
       });
     }
     if (selectedFabrics.length > 0) {
@@ -145,6 +175,8 @@ const Products = () => {
     setSelectedColors([]);
     setSelectedPatterns([]);
     setPriceRange([0, 10000]);
+    // Clear URL param
+    setSearchParams({});
   };
 
   return (
@@ -156,7 +188,7 @@ const Products = () => {
         <section className="relative py-12 lg:py-20 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-charcoal-dark to-background" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
-          
+
           <div className="container mx-auto px-4 relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -200,25 +232,22 @@ const Products = () => {
                 <div className="hidden lg:flex items-center gap-1 p-1 bg-secondary rounded-lg">
                   <button
                     onClick={() => setGridCols(2)}
-                    className={`p-2 rounded-md transition-colors ${
-                      gridCols === 2 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`p-2 rounded-md transition-colors ${gridCols === 2 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     <Grid3X3 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setGridCols(3)}
-                    className={`p-2 rounded-md transition-colors ${
-                      gridCols === 3 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`p-2 rounded-md transition-colors ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setGridCols(4)}
-                    className={`p-2 rounded-md transition-colors ${
-                      gridCols === 4 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`p-2 rounded-md transition-colors ${gridCols === 4 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
                       <rect x="1" y="1" width="3" height="3" rx="0.5" />
@@ -263,7 +292,7 @@ const Products = () => {
 
                   <FilterSection
                     title="Category"
-                    options={categories.map((c) => c.name)}
+                    options={categoryOptions}
                     selected={selectedCategories}
                     onSelect={(opt) => toggleFilter(selectedCategories, opt, setSelectedCategories)}
                   />
@@ -329,9 +358,8 @@ const Products = () => {
                   </div>
                 ) : (
                   <div
-                    className={`grid gap-4 lg:gap-6 ${
-                      gridCols === 2 ? 'grid-cols-2' : gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
-                    }`}
+                    className={`grid gap-4 lg:gap-6 ${gridCols === 2 ? 'grid-cols-2' : gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
+                      }`}
                   >
                     {filteredProducts.map((product, index) => (
                       <ProductCard key={product.id} product={product} index={index} />
@@ -377,7 +405,7 @@ const Products = () => {
 
                   <FilterSection
                     title="Category"
-                    options={categories.map((c) => c.name)}
+                    options={categoryOptions}
                     selected={selectedCategories}
                     onSelect={(opt) => toggleFilter(selectedCategories, opt, setSelectedCategories)}
                   />
