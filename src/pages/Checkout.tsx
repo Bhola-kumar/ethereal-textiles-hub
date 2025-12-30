@@ -434,25 +434,7 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
-      // Notify sellers manually since triggers might be missing
-      const distinctSellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
-
-      if (distinctSellerIds.length > 0) {
-        const notifications = distinctSellerIds.map(sellerId => ({
-          user_id: sellerId,
-          type: 'order_new',
-          title: 'New Order Received',
-          message: `You have received a new order #${order.order_number}`,
-          link: '/seller/orders',
-          is_read: false
-        }));
-
-        const { error: notificationError } = await supabase.from('notifications').insert(notifications);
-        if (notificationError) {
-          console.error('Failed to create seller notifications:', notificationError);
-          // Don't block the order completion for notification errors
-        }
-      }
+      // Seller notifications are handled automatically by database trigger (notify_seller_new_order)
 
       // Clear cart
       clearCart();
