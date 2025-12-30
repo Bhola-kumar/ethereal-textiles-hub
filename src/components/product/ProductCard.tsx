@@ -73,7 +73,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link to={productLink}>
-        <div className="relative overflow-hidden rounded-xl bg-card border border-border/50 transition-all duration-500 hover:border-primary/30 hover:shadow-card-hover">
+<div className="relative overflow-hidden rounded-lg bg-card border border-border/50 transition-all duration-500 hover:border-primary/30 hover:shadow-card-hover">
           {/* Image Container */}
           <div className="relative aspect-[3/4] overflow-hidden">
             <motion.img
@@ -92,19 +92,19 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             />
 
             {/* Badges */}
-            <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <div className="absolute top-2 left-2 flex flex-col gap-1">
               {isNew && (
-                <span className="px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-md">
+                <span className="px-1.5 py-0.5 bg-primary text-primary-foreground text-[10px] font-medium rounded">
                   NEW
                 </span>
               )}
               {isTrending && (
-                <span className="px-2 py-1 bg-destructive text-destructive-foreground text-xs font-medium rounded-md">
-                  TRENDING
+                <span className="px-1.5 py-0.5 bg-destructive text-destructive-foreground text-[10px] font-medium rounded">
+                  HOT
                 </span>
               )}
               {discount > 0 && (
-                <span className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded-md">
+                <span className="px-1.5 py-0.5 bg-green-600 text-white text-[10px] font-medium rounded">
                   -{discount}%
                 </span>
               )}
@@ -112,7 +112,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
             {/* Quick Actions */}
             <motion.div
-              className="absolute top-3 right-3 flex flex-col gap-2"
+              className="absolute top-2 right-2 flex flex-col gap-1"
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : 10 }}
               transition={{ duration: 0.3 }}
@@ -120,11 +120,11 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               <Button
                 variant="glass"
                 size="icon"
-                className="h-9 w-9"
+                className="h-7 w-7"
                 onClick={handleWishlistToggle}
               >
                 <Heart
-                  className={`h-4 w-4 transition-colors ${
+                  className={`h-3 w-3 transition-colors ${
                     inWishlist ? 'fill-primary text-primary' : ''
                   }`}
                 />
@@ -132,73 +132,74 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               <Button
                 variant="glass"
                 size="icon"
-                className="h-9 w-9"
+                className="h-7 w-7"
                 asChild
               >
                 <Link to={productLink} onClick={(e) => e.stopPropagation()}>
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-3 w-3" />
                 </Link>
               </Button>
             </motion.div>
 
             {/* Add to Cart Button */}
             <motion.div
-              className="absolute bottom-3 left-3 right-3"
+              className="absolute bottom-2 left-2 right-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
               transition={{ duration: 0.3 }}
             >
               <Button
                 variant={inCart ? 'secondary' : 'hero'}
-                className="w-full"
+                size="sm"
+                className="w-full text-xs h-7"
                 onClick={handleAddToCart}
                 disabled={!inStock}
               >
-                <ShoppingBag className="h-4 w-4 mr-2" />
+                <ShoppingBag className="h-3 w-3 mr-1" />
                 {!inStock ? 'Out of Stock' : inCart ? 'Add More' : 'Add to Cart'}
               </Button>
             </motion.div>
           </div>
 
           {/* Product Info */}
-          <div className="p-4">
+          <div className="p-2">
             {/* Shop Info */}
             {product.shop_name && (
               <Link 
                 to={`/shop/${product.shop_slug}`} 
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+                className="flex items-center gap-1 mb-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
               >
-                <Store className="h-3 w-3" />
+                <Store className="h-2.5 w-2.5" />
                 <span className="truncate">{product.shop_name}</span>
                 {product.shop_is_verified && (
-                  <CheckCircle className="h-3 w-3 text-primary flex-shrink-0" />
+                  <CheckCircle className="h-2.5 w-2.5 text-primary flex-shrink-0" />
                 )}
               </Link>
             )}
 
-            <div className="flex items-center gap-1 mb-2">
-              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-              <span className="text-sm font-medium">{product.rating || 0}</span>
-              <span className="text-xs text-muted-foreground">
-                ({reviewsCount} reviews)
+            <div className="flex items-center gap-1 mb-1">
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              <span className="text-xs font-medium">{product.rating || 0}</span>
+              <span className="text-[10px] text-muted-foreground">
+                ({reviewsCount})
               </span>
             </div>
 
-            <h3 className="font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+            <h3 className="font-display text-xs font-semibold text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
               {product.name}
             </h3>
 
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-[10px] text-muted-foreground mb-1.5">
               {product.fabric || 'Cotton'} • {product.pattern || 'Classic'}
             </p>
 
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-primary">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold text-primary">
                 ₹{product.price.toLocaleString()}
               </span>
               {originalPrice && (
-                <span className="text-sm text-muted-foreground line-through">
+                <span className="text-[10px] text-muted-foreground line-through">
                   ₹{originalPrice.toLocaleString()}
                 </span>
               )}

@@ -36,16 +36,16 @@ const ProductCarousel = ({
 
   if (isLoading) {
     return (
-      <section className="py-12 lg:py-20">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <Skeleton className="h-10 w-48" />
-            <Skeleton className="h-10 w-24" />
+      <section className="py-6 lg:py-10">
+        <div className="container mx-auto px-3">
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-7 w-40" />
+            <Skeleton className="h-8 w-20" />
           </div>
-          <div className="flex gap-4 overflow-hidden">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-[280px] lg:w-[320px] flex-shrink-0">
-                <Skeleton className="aspect-[3/4] rounded-xl" />
+          <div className="flex gap-2 overflow-hidden">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="w-[160px] lg:w-[180px] flex-shrink-0">
+                <Skeleton className="aspect-[3/4] rounded-lg" />
               </div>
             ))}
           </div>
@@ -57,28 +57,28 @@ const ProductCarousel = ({
   if (!products.length) return null;
 
   return (
-    <section className="py-12 lg:py-20">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
+    <section className="py-6 lg:py-10">
+      <div className="container mx-auto px-3">
+        <div className="flex items-center justify-between mb-4">
           <motion.h2
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="text-2xl lg:text-4xl font-display font-bold"
+            className="text-lg lg:text-2xl font-display font-bold"
           >
             {title}
           </motion.h2>
           <Link to={viewAllLink}>
-            <Button variant="ghost" className="group">
+            <Button variant="ghost" size="sm" className="group text-xs">
               View All
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
         </div>
 
         <div ref={scrollRef} className="netflix-carousel">
           {products.map((product, index) => (
-            <div key={product.id} className="w-[280px] lg:w-[320px]">
+            <div key={product.id} className="w-[160px] lg:w-[180px]">
               <ProductCard product={product} index={index} />
             </div>
           ))}
@@ -96,13 +96,13 @@ const CategoryCard = ({
   index: number;
 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 30 }}
+    initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    transition={{ delay: index * 0.1 }}
+    transition={{ delay: index * 0.05 }}
   >
     <Link to={`/products?category=${category.id}`}>
-      <div className="group relative overflow-hidden rounded-2xl aspect-[4/5] glass-card hover-lift">
+      <div className="group relative overflow-hidden rounded-lg aspect-[4/5] glass-card hover-lift">
         <img
           src={
             category.image_url ||
@@ -112,11 +112,11 @@ const CategoryCard = ({
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <h3 className="text-xl lg:text-2xl font-display font-bold mb-1 group-hover:text-primary transition-colors">
+        <div className="absolute bottom-0 left-0 right-0 p-3">
+          <h3 className="text-sm lg:text-base font-display font-bold mb-0.5 group-hover:text-primary transition-colors">
             {category.name}
           </h3>
-          <p className="text-sm text-muted-foreground">Explore Collection</p>
+          <p className="text-[10px] text-muted-foreground">Explore</p>
         </div>
       </div>
     </Link>
@@ -196,7 +196,7 @@ const Index = () => {
         <motion.section
           ref={heroRef}
           style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
-          className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20"
+          className="relative min-h-[85vh] flex items-center justify-center overflow-hidden pt-14"
         >
           {/* Background */}
           <div className="absolute inset-0">
@@ -211,22 +211,22 @@ const Index = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/60" />
 
             {/* Glow Effect */}
-            <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
+            <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px]" />
           </div>
 
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-3xl">
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-                <span className="inline-block px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium mb-6">
+          <div className="container mx-auto px-3 relative z-10">
+            <div className="max-w-2xl">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+                <span className="inline-block px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-primary text-xs font-medium mb-4">
                   ✨ Authentic Handwoven from Patwatoli
                 </span>
               </motion.div>
 
               <motion.h1
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1 }}
-                className="text-4xl md:text-6xl lg:text-7xl font-display font-bold leading-tight mb-6"
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-2xl md:text-4xl lg:text-5xl font-display font-bold leading-tight mb-4"
               >
                 Traditional
                 <br />
@@ -234,29 +234,28 @@ const Index = () => {
               </motion.h1>
 
               <motion.p
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-lg lg:text-xl text-muted-foreground max-w-xl mb-8"
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-sm lg:text-base text-muted-foreground max-w-lg mb-5"
               >
-                Discover the timeless tradition of handwoven gamchhas from Patwatoli, Manpur, Gayaji. Crafted with love
-                by skilled artisans using modern loom techniques.
+                Discover handwoven gamchhas from Patwatoli, Manpur, Gayaji. Crafted by skilled artisans.
               </motion.p>
 
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="flex flex-wrap gap-4"
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="flex flex-wrap gap-2"
               >
                 <Link to="/products">
-                  <Button variant="hero" size="xl">
+                  <Button variant="hero" size="default">
                     Shop Collection
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link to="/about">
-                  <Button variant="hero-outline" size="xl">
+                  <Button variant="hero-outline" size="default">
                     Our Story
                   </Button>
                 </Link>
@@ -264,19 +263,19 @@ const Index = () => {
 
               {/* Features */}
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="flex flex-wrap gap-8 mt-16"
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="flex flex-wrap gap-4 mt-8"
               >
                 {features.map((feature, index) => (
-                  <div key={feature.title} className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                      <feature.icon className="h-5 w-5 text-primary" />
+                  <div key={feature.title} className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                      <feature.icon className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">{feature.title}</p>
-                      <p className="text-sm text-muted-foreground">{feature.description}</p>
+                      <p className="text-xs font-semibold text-foreground">{feature.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{feature.description}</p>
                     </div>
                   </div>
                 ))}
@@ -289,17 +288,17 @@ const Index = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2"
           >
             <motion.div
-              animate={{ y: [0, 10, 0] }}
+              animate={{ y: [0, 6, 0] }}
               transition={{ repeat: Infinity, duration: 2 }}
-              className="w-6 h-10 rounded-full border-2 border-muted-foreground/50 flex items-start justify-center p-2"
+              className="w-5 h-8 rounded-full border-2 border-muted-foreground/50 flex items-start justify-center p-1.5"
             >
               <motion.div
-                animate={{ opacity: [1, 0, 1], y: [0, 8, 0] }}
+                animate={{ opacity: [1, 0, 1], y: [0, 6, 0] }}
                 transition={{ repeat: Infinity, duration: 2 }}
-                className="w-1 h-2 bg-primary rounded-full"
+                className="w-1 h-1.5 bg-primary rounded-full"
               />
             </motion.div>
           </motion.div>
@@ -308,43 +307,43 @@ const Index = () => {
 
       {/* Categories Section */}
       {isSectionVisible("categories") && (
-        <section className="py-12 lg:py-20 bg-charcoal-dark">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <h2 className="text-3xl lg:text-5xl font-display font-bold mb-2">
+        <section className="py-6 lg:py-10 bg-charcoal-dark">
+          <div className="container mx-auto px-3">
+            <div className="flex items-center justify-between mb-4">
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                <h2 className="text-lg lg:text-2xl font-display font-bold mb-1">
                   Shop by <span className="gradient-text">Category</span>
                 </h2>
-                <p className="text-muted-foreground max-w-lg">
-                  Explore our curated collections of handcrafted gamchhas for every occasion.
+                <p className="text-xs text-muted-foreground max-w-md">
+                  Explore our curated collections of handcrafted gamchhas.
                 </p>
               </motion.div>
               <Link to="/products">
-                <Button variant="ghost" className="group hidden sm:flex">
+                <Button variant="ghost" size="sm" className="group hidden sm:flex text-xs">
                   View All
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </div>
 
             {categoriesLoading ? (
               <div className="netflix-carousel">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-[200px] lg:w-[280px] flex-shrink-0">
-                    <Skeleton className="aspect-[4/5] rounded-2xl" />
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="w-[120px] lg:w-[150px] flex-shrink-0">
+                    <Skeleton className="aspect-[4/5] rounded-lg" />
                   </div>
                 ))}
               </div>
             ) : categories.length > 0 ? (
               <div className="netflix-carousel">
                 {categories.map((category, index) => (
-                  <div key={category.id} className="w-[200px] lg:w-[280px] flex-shrink-0">
+                  <div key={category.id} className="w-[120px] lg:w-[150px] flex-shrink-0">
                     <CategoryCard category={category} index={index} />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">No categories available yet.</div>
+              <div className="text-center py-6 text-muted-foreground text-sm">No categories available yet.</div>
             )}
           </div>
         </section>
@@ -352,39 +351,39 @@ const Index = () => {
 
       {/* Shop by Sellers Section */}
       {isSectionVisible("sellers") && (
-        <section className="py-12 lg:py-20">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <h2 className="text-3xl lg:text-5xl font-display font-bold mb-2">
+        <section className="py-6 lg:py-10">
+          <div className="container mx-auto px-3">
+            <div className="flex items-center justify-between mb-4">
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                <h2 className="text-lg lg:text-2xl font-display font-bold mb-1">
                   Shop by <span className="gradient-text">Sellers</span>
                 </h2>
-                <p className="text-muted-foreground max-w-lg">
-                  Discover authentic products from our trusted seller community.
+                <p className="text-xs text-muted-foreground max-w-md">
+                  Discover authentic products from trusted sellers.
                 </p>
               </motion.div>
             </div>
 
             {shopsLoading ? (
               <div className="netflix-carousel">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-[280px] lg:w-[320px] flex-shrink-0">
-                    <Skeleton className="aspect-[16/9] rounded-2xl" />
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="w-[180px] lg:w-[200px] flex-shrink-0">
+                    <Skeleton className="aspect-[16/9] rounded-lg" />
                   </div>
                 ))}
               </div>
             ) : shops.length > 0 ? (
               <div className="netflix-carousel">
                 {shops.map((shop, index) => (
-                  <div key={shop.id} className="w-[280px] lg:w-[320px] flex-shrink-0">
+                  <div key={shop.id} className="w-[180px] lg:w-[200px] flex-shrink-0">
                     <ShopBySellerCard shop={shop} index={index} />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <Store className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No seller shops available yet.</p>
+              <div className="text-center py-6 text-muted-foreground">
+                <Store className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No seller shops available yet.</p>
               </div>
             )}
           </div>
