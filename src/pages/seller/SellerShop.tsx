@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,8 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Store, MapPin, CreditCard, Save, CheckCircle } from 'lucide-react';
+import { Store, MapPin, CreditCard, Save, CheckCircle, Upload, X, Loader2, Image as ImageIcon, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import { IMAGE_GUIDELINES, processImageForUpload, formatFileSize } from '@/lib/imageUtils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Shop {
   id: string;
@@ -58,6 +65,11 @@ export default function SellerShop() {
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [shopForm, setShopForm] = useState({
     shop_name: '',
@@ -119,6 +131,76 @@ export default function SellerShop() {
       });
     }
     setLoading(false);
+  };
+
+  const handleImageUpload = async (
+    file: File,
+    type: 'logo' | 'banner',
+    setUploading: (val: boolean) => void
+  ) => {
+    if (!shop) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const imageType = type === 'logo' ? 'shopLogo' : 'shopBanner';
+      const { file: processedFile, wasCompressed } = await processImageForUpload(file, imageType);
+      
+      if (wasCompressed) {
+        toast.info(`Image compressed: ${formatFileSize(file.size)} → ${formatFileSize(processedFile.size)}`);
+      }
+
+      const fileExt = processedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${shop.id}-${type}-${Date.now()}.${fileExt}`;
+      const filePath = `shop-${type}s/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, processedFile, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      const updateField = type === 'logo' ? 'logo_url' : 'banner_url';
+      
+      // Update local state
+      setShopForm(prev => ({ ...prev, [updateField]: publicUrl }));
+      
+      // Update database
+      await supabase
+        .from('shops')
+        .update({ [updateField]: publicUrl })
+        .eq('id', shop.id);
+
+      toast.success(`${type === 'logo' ? 'Logo' : 'Banner'} uploaded successfully`);
+    } catch (error: any) {
+      toast.error(`Failed to upload ${type}: ` + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = async (type: 'logo' | 'banner') => {
+    if (!shop) return;
+
+    const updateField = type === 'logo' ? 'logo_url' : 'banner_url';
+    
+    setShopForm(prev => ({ ...prev, [updateField]: '' }));
+    
+    await supabase
+      .from('shops')
+      .update({ [updateField]: null })
+      .eq('id', shop.id);
+
+    toast.success(`${type === 'logo' ? 'Logo' : 'Banner'} removed`);
   };
 
   const handleSaveShop = async () => {
@@ -194,6 +276,9 @@ export default function SellerShop() {
     }
   };
 
+  const logoGuidelines = IMAGE_GUIDELINES.shopLogo;
+  const bannerGuidelines = IMAGE_GUIDELINES.shopBanner;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -247,7 +332,7 @@ export default function SellerShop() {
                 <CardTitle>Shop Information</CardTitle>
                 <CardDescription>Basic details about your store</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Shop Name *</Label>
@@ -290,23 +375,185 @@ export default function SellerShop() {
                   </div>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Logo URL</Label>
-                    <Input
-                      value={shopForm.logo_url}
-                      onChange={e => setShopForm({ ...shopForm, logo_url: e.target.value })}
-                      placeholder="https://..."
-                    />
+                {/* Logo Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" /> Shop Logo
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="font-medium mb-1">{logoGuidelines.label}</p>
+                          <p className="text-xs">{logoGuidelines.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
-                  <div>
-                    <Label>Banner URL</Label>
+                  
+                  <p className="text-xs text-muted-foreground">{logoGuidelines.description}</p>
+                  
+                  <div className="flex items-start gap-4">
+                    {shopForm.logo_url ? (
+                      <div className="relative">
+                        <img 
+                          src={shopForm.logo_url} 
+                          alt="Shop Logo" 
+                          className="w-24 h-24 object-cover rounded-lg border border-border"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={() => handleRemoveImage('logo')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="w-24 h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => logoInputRef.current?.click()}
+                      >
+                        {uploadingLogo ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        ) : (
+                          <>
+                            <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                            <span className="text-xs text-muted-foreground">Upload</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        value={shopForm.logo_url}
+                        onChange={e => setShopForm({ ...shopForm, logo_url: e.target.value })}
+                        placeholder="Or paste image URL here..."
+                        className="text-sm"
+                      />
+                      {!shopForm.logo_url && (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, 'logo', setUploadingLogo);
+                      e.target.value = '';
+                    }}
+                  />
+                </div>
+
+                {/* Banner Upload */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4" /> Shop Banner
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="font-medium mb-1">{bannerGuidelines.label}</p>
+                          <p className="text-xs">{bannerGuidelines.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">{bannerGuidelines.description}</p>
+                  
+                  {shopForm.banner_url ? (
+                    <div className="relative">
+                      <img 
+                        src={shopForm.banner_url} 
+                        alt="Shop Banner" 
+                        className="w-full h-32 object-cover rounded-lg border border-border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={() => handleRemoveImage('banner')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div 
+                      className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                      onClick={() => bannerInputRef.current?.click()}
+                    >
+                      {uploadingBanner ? (
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm text-muted-foreground">Upload Banner Image</span>
+                          <span className="text-xs text-muted-foreground">Recommended: {bannerGuidelines.maxWidth}×{bannerGuidelines.maxHeight}px</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
                     <Input
                       value={shopForm.banner_url}
                       onChange={e => setShopForm({ ...shopForm, banner_url: e.target.value })}
-                      placeholder="https://..."
+                      placeholder="Or paste banner image URL here..."
+                      className="flex-1 text-sm"
                     />
+                    {!shopForm.banner_url && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => bannerInputRef.current?.click()}
+                        disabled={uploadingBanner}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingBanner ? 'Uploading...' : 'Upload'}
+                      </Button>
+                    )}
                   </div>
+                  
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, 'banner', setUploadingBanner);
+                      e.target.value = '';
+                    }}
+                  />
                 </div>
 
                 <Button onClick={handleSaveShop} variant="hero" disabled={saving}>

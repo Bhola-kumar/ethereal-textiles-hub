@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Edit, Trash2, Search, FolderOpen, X, Save, ImagePlus } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, FolderOpen, X, Save, ImagePlus, Upload, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import { IMAGE_GUIDELINES, processImageForUpload, formatFileSize } from '@/lib/imageUtils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Category {
   id: string;
@@ -26,12 +33,16 @@ export default function AdminCategories() {
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     image_url: '',
   });
+
+  const guidelines = IMAGE_GUIDELINES.category;
 
   useEffect(() => {
     fetchCategories();
@@ -65,6 +76,42 @@ export default function AdminCategories() {
   const handleAddNew = () => {
     resetForm();
     setShowForm(true);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const { file: processedFile, wasCompressed } = await processImageForUpload(file, 'category');
+      if (wasCompressed) {
+        toast.info(`Image compressed: ${formatFileSize(file.size)} → ${formatFileSize(processedFile.size)}`);
+      }
+
+      const fileExt = processedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `category-${Date.now()}.${fileExt}`;
+      const filePath = `categories/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, processedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+      toast.success('Image uploaded');
+    } catch (error: any) {
+      toast.error('Failed to upload: ' + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleEdit = (category: Category) => {
@@ -291,29 +338,75 @@ export default function AdminCategories() {
                     />
                   </div>
 
-                  {/* Image URL */}
+                  {/* Image Upload */}
                   <div className="space-y-2">
-                    <Label htmlFor="image_url">Image URL</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="image_url">Category Image</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-xs">
+                            <p className="text-xs">{guidelines.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{guidelines.description}</p>
+                    
+                    {formData.image_url ? (
+                      <div className="relative">
+                        <img src={formData.image_url} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-border" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6"
+                          onClick={() => setFormData({ ...formData, image_url: '' })}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => imageInputRef.current?.click()}
+                      >
+                        {uploadingImage ? (
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                            <span className="text-sm text-muted-foreground">Click to upload</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="flex gap-2">
                       <Input
                         id="image_url"
                         value={formData.image_url}
                         onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                        placeholder="https://example.com/image.jpg"
+                        placeholder="Or paste image URL..."
+                        className="flex-1"
                       />
                     </div>
-                    {formData.image_url && (
-                      <div className="mt-2 rounded-lg overflow-hidden border border-border">
-                        <img
-                          src={formData.image_url}
-                          alt="Preview"
-                          className="w-full h-32 object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/400x200?text=Invalid+Image';
-                          }}
-                        />
-                      </div>
-                    )}
+                    
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
                   </div>
 
                   {/* Submit Button */}
