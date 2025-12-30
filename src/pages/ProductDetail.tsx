@@ -75,6 +75,7 @@ const ProductDetail = () => {
     const cartProduct = {
       id: product.id,
       name: product.name,
+      slug: product.slug,
       price: product.price,
       originalPrice: product.original_price || undefined,
       image: productImages[0],
@@ -95,7 +96,7 @@ const ProductDetail = () => {
       shop_slug: product.shop_slug || undefined,
       shop_is_verified: product.shop_is_verified || undefined,
     };
-    
+
     for (let i = 0; i < quantity; i++) {
       addToCart(cartProduct);
     }
@@ -127,7 +128,7 @@ const ProductDetail = () => {
       shop_slug: product.shop_slug || undefined,
       shop_is_verified: product.shop_is_verified || undefined,
     };
-    
+
     if (inWishlist) {
       removeFromWishlist(product.id);
       toast.info('Removed from wishlist');
@@ -240,11 +241,10 @@ const ProductDetail = () => {
                     <button
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                        selectedImageIndex === index
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === index
                           ? 'border-primary ring-2 ring-primary/20'
                           : 'border-border/50 hover:border-border'
-                      }`}
+                        }`}
                     >
                       <img
                         src={img}
@@ -266,7 +266,7 @@ const ProductDetail = () => {
             >
               {/* Shop Info */}
               {product.shop_name && (
-                <Link 
+                <Link
                   to={`/shop/${product.shop_slug}`}
                   className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/50 hover:bg-secondary rounded-full transition-colors"
                 >
@@ -284,11 +284,10 @@ const ProductDetail = () => {
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-4 w-4 ${
-                        i < Math.floor(product.rating || 0)
+                      className={`h-4 w-4 ${i < Math.floor(product.rating || 0)
                           ? 'fill-primary text-primary'
                           : 'fill-muted text-muted'
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>
@@ -333,9 +332,8 @@ const ProductDetail = () => {
               {/* Stock Status */}
               <div className="flex items-center gap-2">
                 <span
-                  className={`h-2 w-2 rounded-full ${
-                    inStock ? 'bg-green-500' : 'bg-destructive'
-                  }`}
+                  className={`h-2 w-2 rounded-full ${inStock ? 'bg-green-500' : 'bg-destructive'
+                    }`}
                 />
                 <span className={inStock ? 'text-green-500' : 'text-destructive'}>
                   {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
@@ -390,8 +388,8 @@ const ProductDetail = () => {
               </div>
 
               {/* Seller Payment Info */}
-              <SellerPaymentInfo 
-                sellerId={product.seller_id} 
+              <SellerPaymentInfo
+                sellerId={product.seller_id}
                 shopName={product.shop_name}
                 shopIsVerified={product.shop_is_verified}
               />
