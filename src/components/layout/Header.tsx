@@ -38,27 +38,27 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 lg:h-20">
+      <div className="container mx-auto px-3">
+        <div className="flex items-center justify-between h-12 lg:h-14">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-1">
             <motion.div 
-              className="text-2xl lg:text-3xl font-display font-bold gradient-text"
+              className="text-lg lg:text-xl font-display font-bold gradient-text"
               whileHover={{ scale: 1.05 }}
               transition={{ type: 'spring', stiffness: 400 }}
             >
               Gamchha
             </motion.div>
-            <span className="text-xs text-muted-foreground hidden sm:block">DUKAAN</span>
+            <span className="text-[10px] text-muted-foreground hidden sm:block">DUKAAN</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-5">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
-                className="relative text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-300 group"
+                className="relative text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-300 group"
               >
                 {link.name}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
@@ -67,16 +67,16 @@ const Header = () => {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 lg:gap-4">
+          <div className="flex items-center gap-1 lg:gap-2">
             {/* Track Order */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate('/track-order')}
-              className="relative hidden sm:flex"
+              className="relative hidden sm:flex h-8 w-8"
               title="Track Order"
             >
-              <MapPin className="h-5 w-5" />
+              <MapPin className="h-4 w-4" />
             </Button>
 
             {/* Search */}
@@ -84,9 +84,9 @@ const Header = () => {
               variant="ghost"
               size="icon"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="relative"
+              className="relative h-8 w-8"
             >
-              <Search className="h-5 w-5" />
+              <Search className="h-4 w-4" />
             </Button>
 
             {/* Wishlist */}
@@ -94,14 +94,14 @@ const Header = () => {
               variant="ghost"
               size="icon"
               onClick={() => navigate('/wishlist')}
-              className="relative"
+              className="relative h-8 w-8"
             >
-              <Heart className="h-5 w-5" />
+              <Heart className="h-4 w-4" />
               {wishlistCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-medium"
+                  className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
                 >
                   {wishlistCount}
                 </motion.span>
@@ -113,14 +113,14 @@ const Header = () => {
               variant="ghost"
               size="icon"
               onClick={() => navigate('/cart')}
-              className="relative"
+              className="relative h-8 w-8"
             >
-              <ShoppingBag className="h-5 w-5" />
+              <ShoppingBag className="h-4 w-4" />
               {cartCount > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-medium"
+                  className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
                 >
                   {cartCount}
                 </motion.span>
@@ -134,19 +134,19 @@ const Header = () => {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="hidden lg:flex items-center gap-2 px-3">
-                    <div className="h-7 w-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-                      <User className="h-4 w-4 text-primary" />
+                  <Button variant="ghost" size="sm" className="hidden lg:flex items-center gap-1.5 px-2 h-8">
+                    <div className="h-5 w-5 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                      <User className="h-3 w-3 text-primary" />
                     </div>
-                    <span className="text-sm font-medium max-w-[100px] truncate">
+                    <span className="text-xs font-medium max-w-[80px] truncate">
                       {user.user_metadata?.full_name?.split(' ')[0] || 'Account'}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user.email}</p>
-                    <p className="text-xs text-muted-foreground">
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1">
+                    <p className="text-xs font-medium truncate">{user.email}</p>
+                    <p className="text-[10px] text-muted-foreground">
                       {isAdmin ? 'Admin' : isSeller ? 'Seller' : 'Customer'}
                     </p>
                   </div>
