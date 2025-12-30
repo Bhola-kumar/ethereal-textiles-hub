@@ -37,6 +37,7 @@ import SellerAnalytics from "./pages/seller/SellerAnalytics";
 import SellerShop from "./pages/seller/SellerShop";
 import SellerSettings from "./pages/seller/SellerSettings";
 import NotFound from "./pages/NotFound";
+import ScrollToTop from "./components/utils/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/products" element={<Products />} />
@@ -74,7 +76,7 @@ const App = () => (
               <Route path="collections" element={<AdminCollections />} />
               <Route path="home-sections" element={<AdminHomeSections />} />
             </Route>
-            
+
             {/* Seller Routes */}
             <Route path="/seller/register" element={<SellerRegister />} />
             <Route path="/seller" element={<SellerLayout />}>
@@ -85,7 +87,7 @@ const App = () => (
               <Route path="shop" element={<SellerShop />} />
               <Route path="settings" element={<SellerSettings />} />
             </Route>
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
