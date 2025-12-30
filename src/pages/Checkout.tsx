@@ -12,11 +12,11 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { 
-  MapPin, 
-  CreditCard, 
-  Truck, 
-  ArrowLeft, 
+import {
+  MapPin,
+  CreditCard,
+  Truck,
+  ArrowLeft,
   Plus,
   CheckCircle,
   Banknote,
@@ -73,7 +73,7 @@ export default function Checkout() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { items: cartItems, clearCart, getCartTotal } = useCartStore();
-  
+
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export default function Checkout() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
-  
+
   const [addressForm, setAddressForm] = useState({
     full_name: '',
     phone: '',
@@ -119,7 +119,7 @@ export default function Checkout() {
       .select('*')
       .eq('user_id', user!.id)
       .order('is_default', { ascending: false });
-    
+
     if (data) {
       setAddresses(data);
       const defaultAddr = data.find(a => a.is_default) || data[0];
@@ -131,10 +131,10 @@ export default function Checkout() {
 
   const fetchSellerPaymentInfo = async () => {
     if (!cartItems || cartItems.length === 0) return;
-    
+
     // First try to get seller_ids from cart items
     let sellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
-    
+
     // If no seller IDs in cart items, fetch from products table using product IDs
     if (sellerIds.length === 0) {
       const productIds = cartItems.map(item => item.id);
@@ -143,12 +143,12 @@ export default function Checkout() {
         .select('seller_id')
         .in('id', productIds)
         .not('seller_id', 'is', null);
-      
+
       if (productData && productData.length > 0) {
         sellerIds = [...new Set(productData.map(p => p.seller_id).filter(Boolean))] as string[];
       }
     }
-    
+
     if (sellerIds.length === 0) {
       // If still no seller IDs found, allow COD as fallback
       setSellerPayments([{
@@ -211,7 +211,7 @@ export default function Checkout() {
           convenience_charge: number | null;
           charge_convenience: boolean | null;
         }>;
-        
+
         setSellerPayments(shopData.map(s => ({
           ...s,
           shipping_charge: Number(s.shipping_charge) || 0,
@@ -221,7 +221,7 @@ export default function Checkout() {
           convenience_charge: Number(s.convenience_charge) || 0,
           charge_convenience: s.charge_convenience ?? false,
         })));
-        
+
         // Calculate totals per seller with charges
         const totalsMap = new Map<string, number>();
         cartItems.forEach(item => {
@@ -243,10 +243,10 @@ export default function Checkout() {
 
           // Calculate shipping (free if above threshold)
           const finalShipping = freeShippingAbove && sellerSubtotal >= freeShippingAbove ? 0 : shippingCharge;
-          
+
           // Calculate GST
           const gstAmount = chargeGst ? (sellerSubtotal * gstPercentage / 100) : 0;
-          
+
           // Calculate convenience fee
           const finalConvenience = chargeConvenience ? convenienceCharge : 0;
 
@@ -263,7 +263,7 @@ export default function Checkout() {
             convenience_charge: finalConvenience,
           };
         });
-        
+
         setSellerCartTotals(sellerTotals);
       } else {
         // No seller data found - provide fallback with COD
@@ -305,7 +305,7 @@ export default function Checkout() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const result = addressSchema.safeParse(addressForm);
     if (!result.success) {
       toast.error(result.error.errors[0].message);
@@ -360,15 +360,17 @@ export default function Checkout() {
           p_product_ids: productIds,
           p_quantities: quantities,
           p_seller_ids: sellerIds
-        }) as { data: { 
-          subtotal: number; 
-          shipping: number; 
-          gst: number; 
-          convenience: number; 
-          total: number; 
-          items: Array<{ product_id: string; product_name: string; price: number; quantity: number }>;
-          validated: boolean;
-        } | null; error: any };
+        }) as {
+          data: {
+            subtotal: number;
+            shipping: number;
+            gst: number;
+            convenience: number;
+            total: number;
+            items: Array<{ product_id: string; product_name: string; price: number; quantity: number }>;
+            validated: boolean;
+          } | null; error: any
+        };
 
       if (validationError) {
         throw new Error(validationError.message || 'Failed to validate order prices');
@@ -405,8 +407,8 @@ export default function Checkout() {
             pincode: selectedAddress.pincode,
           },
           payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
-          notes: paymentMethod === 'cod' 
-            ? `Cash on Delivery | GST: ₹${verifiedGst.toFixed(2)} | Convenience: ₹${verifiedConvenience.toFixed(2)}` 
+          notes: paymentMethod === 'cod'
+            ? `Cash on Delivery | GST: ₹${verifiedGst.toFixed(2)} | Convenience: ₹${verifiedConvenience.toFixed(2)}`
             : `UPI Payment | Transaction ID: ${transactionId || 'Pending'} | GST: ₹${verifiedGst.toFixed(2)} | Convenience: ₹${verifiedConvenience.toFixed(2)}`,
         })
         .select()
@@ -431,6 +433,26 @@ export default function Checkout() {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Notify sellers manually since triggers might be missing
+      const distinctSellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
+
+      if (distinctSellerIds.length > 0) {
+        const notifications = distinctSellerIds.map(sellerId => ({
+          user_id: sellerId,
+          type: 'order_new',
+          title: 'New Order Received',
+          message: `You have received a new order #${order.order_number}`,
+          link: '/seller/orders',
+          is_read: false
+        }));
+
+        const { error: notificationError } = await supabase.from('notifications').insert(notifications);
+        if (notificationError) {
+          console.error('Failed to create seller notifications:', notificationError);
+          // Don't block the order completion for notification errors
+        }
+      }
 
       // Clear cart
       clearCart();
@@ -507,13 +529,13 @@ export default function Checkout() {
                 Your order #{orderNumber} has been placed successfully.
               </p>
               <p className="text-sm text-muted-foreground mb-8">
-                {paymentMethod === 'upi' 
+                {paymentMethod === 'upi'
                   ? 'The seller will verify your payment and process your order soon.'
                   : 'Pay with cash when your order arrives.'}
               </p>
 
               <div className="flex gap-4 justify-center">
-                <Link to="/my-orders">
+                <Link to="/orders">
                   <Button variant="hero">View Orders</Button>
                 </Link>
                 <Link to="/products">
@@ -544,9 +566,8 @@ export default function Checkout() {
           <div className="flex items-center justify-center gap-4 mb-8">
             {[{ num: 1, label: 'Address' }, { num: 2, label: 'Payment' }, { num: 3, label: 'Review' }].map((s) => (
               <div key={s.num} className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s.num ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s.num ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}>
                   {step > s.num ? <CheckCircle className="h-5 w-5" /> : s.num}
                 </div>
                 <span className={`text-sm hidden sm:inline ${step >= s.num ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -695,16 +716,15 @@ export default function Checkout() {
                     <CardContent className="space-y-4">
                       <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                         <p className="text-sm">
-                          <strong>Direct Payment to Seller:</strong> This platform connects you directly with sellers. 
+                          <strong>Direct Payment to Seller:</strong> This platform connects you directly with sellers.
                           You'll pay the seller directly using their preferred payment method.
                         </p>
                       </div>
 
                       <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'upi' | 'cod')}>
                         {anyUPIAvailable && (
-                          <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${
-                            paymentMethod === 'upi' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/50'
-                          }`}>
+                          <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${paymentMethod === 'upi' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/50'
+                            }`}>
                             <RadioGroupItem value="upi" id="upi" />
                             <label htmlFor="upi" className="flex items-center gap-2 cursor-pointer flex-1">
                               <QrCode className="h-5 w-5 text-primary" />
@@ -716,9 +736,8 @@ export default function Checkout() {
                           </div>
                         )}
                         {anyCODAvailable && (
-                          <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${
-                            paymentMethod === 'cod' ? 'border-green-500 bg-green-500/5' : 'border-border/50 hover:border-green-500/50'
-                          }`}>
+                          <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${paymentMethod === 'cod' ? 'border-green-500 bg-green-500/5' : 'border-border/50 hover:border-green-500/50'
+                            }`}>
                             <RadioGroupItem value="cod" id="cod" />
                             <label htmlFor="cod" className="flex items-center gap-2 cursor-pointer flex-1">
                               <Banknote className="h-5 w-5 text-green-500" />
@@ -762,8 +781,8 @@ export default function Checkout() {
                             <p className="font-medium">{addresses.find(a => a.id === selectedAddressId)!.full_name}</p>
                             <p className="text-muted-foreground">
                               {addresses.find(a => a.id === selectedAddressId)!.address_line1},
-                              {addresses.find(a => a.id === selectedAddressId)!.city}, 
-                              {addresses.find(a => a.id === selectedAddressId)!.state} - 
+                              {addresses.find(a => a.id === selectedAddressId)!.city},
+                              {addresses.find(a => a.id === selectedAddressId)!.state} -
                               {addresses.find(a => a.id === selectedAddressId)!.pincode}
                             </p>
                           </div>
@@ -807,10 +826,10 @@ export default function Checkout() {
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">Complete Payment</h3>
                       <p className="text-sm text-muted-foreground">
-                        Scan the QR code or use the UPI ID to pay the seller(s) directly. 
+                        Scan the QR code or use the UPI ID to pay the seller(s) directly.
                         After payment, enter your transaction ID to confirm.
                       </p>
-                      
+
                       {/* Show QR codes for each seller */}
                       <div className="grid gap-4">
                         {sellerCartTotals.map((seller) => {
