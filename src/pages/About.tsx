@@ -88,9 +88,9 @@ const About = () => {
               className="relative"
             >
               <img
-                src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=500&fit=crop"
+                src="https://iyfewwbohyvrhibuhdyl.supabase.co/storage/v1/object/public/assets/hero-section.jpg"
                 alt="Artisan weaving gamchha"
-                className="rounded-2xl shadow-2xl"
+                className="rounded-2xl shadow-2xl object-cover max-h-[500px] w-full"
               />
               <div className="absolute -bottom-6 -left-6 bg-card p-4 rounded-xl shadow-lg border border-border">
                 <div className="flex items-center gap-3">

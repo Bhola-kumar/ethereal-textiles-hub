@@ -106,7 +106,7 @@ const CategoryCard = ({
         <img
           src={
             category.image_url ||
-            "https://images.pexels.com/photos/6044266/pexels-photo-6044266.jpeg?auto=compress&cs=tinysrgb&w=400"
+            "/placeholder.svg"
           }
           alt={category.name}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -204,7 +204,7 @@ const Index = () => {
               className="absolute inset-0 bg-cover bg-center"
               style={{
                 backgroundImage:
-                  "url(https://images.pexels.com/photos/6044266/pexels-photo-6044266.jpeg?auto=compress&cs=tinysrgb&w=1920)",
+                  "url(https://iyfewwbohyvrhibuhdyl.supabase.co/storage/v1/object/public/assets/hero-section.jpg)",
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-background/40" />

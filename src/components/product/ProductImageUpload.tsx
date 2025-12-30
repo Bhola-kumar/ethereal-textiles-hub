@@ -5,7 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Upload, Link, X, Loader2, ImagePlus } from 'lucide-react';
+import { Upload, Link, X, Loader2, ImagePlus, Info } from 'lucide-react';
+import { IMAGE_GUIDELINES, processImageForUpload, formatFileSize } from '@/lib/imageUtils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ProductImageUploadProps {
   images: string[];
@@ -16,6 +23,8 @@ export default function ProductImageUpload({ images, onImagesChange }: ProductIm
   const [urlInput, setUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const guidelines = IMAGE_GUIDELINES.product;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -31,18 +40,20 @@ export default function ProductImageUpload({ images, onImagesChange }: ProductIm
           continue;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 5MB)`);
-          continue;
+        // Process and compress image
+        const { file: processedFile, wasCompressed } = await processImageForUpload(file, 'product');
+        
+        if (wasCompressed) {
+          toast.info(`${file.name} was compressed: ${formatFileSize(file.size)} → ${formatFileSize(processedFile.size)}`);
         }
 
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileExt = processedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `products/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(filePath, file);
+          .upload(filePath, processedFile);
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
@@ -104,9 +115,33 @@ export default function ProductImageUpload({ images, onImagesChange }: ProductIm
 
   return (
     <div className="space-y-4">
-      <Label className="text-sm font-medium flex items-center gap-2">
-        <ImagePlus className="h-4 w-4" /> Product Images
-      </Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium flex items-center gap-2">
+          <ImagePlus className="h-4 w-4" /> Product Images
+        </Label>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="max-w-xs">
+              <p className="font-medium mb-1">{guidelines.label}</p>
+              <p className="text-xs">{guidelines.description}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      {/* Size Guidelines Info */}
+      <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">📏 Size Guidelines:</span> {guidelines.description}
+          <br />
+          <span className="text-primary">Images will be auto-compressed if needed.</span>
+        </p>
+      </div>
 
       <Tabs defaultValue="upload" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
@@ -135,7 +170,7 @@ export default function ProductImageUpload({ images, onImagesChange }: ProductIm
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Uploading...</p>
+                <p className="text-sm text-muted-foreground">Uploading & compressing...</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -143,7 +178,9 @@ export default function ProductImageUpload({ images, onImagesChange }: ProductIm
                 <p className="text-sm text-muted-foreground">
                   Click to upload or drag images here
                 </p>
-                <p className="text-xs text-muted-foreground">Max 5MB per image</p>
+                <p className="text-xs text-muted-foreground">
+                  Auto-compressed to max {guidelines.maxWidth}×{guidelines.maxHeight}px, {guidelines.maxSizeKB}KB
+                </p>
               </div>
             )}
           </div>
