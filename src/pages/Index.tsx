@@ -307,7 +307,7 @@ const Index = () => {
 
       {/* Categories Section */}
       {isSectionVisible("categories") && (
-        <section className="py-6 lg:py-10 bg-charcoal-dark">
+        <section className="py-6 lg:py-10 bg-secondary/50">
           <div className="container mx-auto px-3">
             <div className="flex items-center justify-between mb-4">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -403,20 +403,20 @@ const Index = () => {
       {/* Featured Collections - Dynamic from Admin */}
       {isSectionVisible("featured_collections") &&
         (collectionsLoading ? (
-          <section className="py-12 lg:py-20">
+          <section className="py-8 lg:py-12">
             <div className="container mx-auto px-4">
               <Skeleton className="h-64 rounded-3xl" />
             </div>
           </section>
         ) : featuredCollections.length > 0 ? (
           featuredCollections.map((collection) => (
-            <section key={collection.id} className="py-12 lg:py-20">
+            <section key={collection.id} className="py-8 lg:py-12">
               <div className="container mx-auto px-4">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-charcoal-light to-charcoal-dark border border-border/50"
+                  className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-secondary to-muted border border-border/50"
                 >
                   <div className="absolute top-0 right-0 w-1/2 h-full">
                     {collection.image_url && (
@@ -426,11 +426,11 @@ const Index = () => {
                         className="w-full h-full object-cover opacity-30"
                       />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-r from-charcoal-dark to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-secondary to-transparent" />
                   </div>
 
                   {/* Glow */}
-                  <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
+                  <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px]" />
 
                   <div className="relative z-10 p-8 lg:p-16 max-w-2xl">
                     {collection.badge_text && (
@@ -438,7 +438,7 @@ const Index = () => {
                         {collection.badge_text}
                       </span>
                     )}
-                    <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
+                    <h2 className="text-2xl lg:text-3xl font-display font-bold mb-3">
                       {collection.subtitle ? (
                         <>
                           {collection.subtitle}
@@ -450,12 +450,12 @@ const Index = () => {
                       )}
                     </h2>
                     {collection.description && (
-                      <p className="text-muted-foreground mb-8 max-w-md">{collection.description}</p>
+                      <p className="text-sm text-muted-foreground mb-6 max-w-md">{collection.description}</p>
                     )}
                     <Link to={collection.link_url}>
-                      <Button variant="hero" size="lg">
+                      <Button variant="hero" size="default">
                         {collection.link_text}
-                        <ArrowRight className="h-5 w-5" />
+                        <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
                   </div>
@@ -477,44 +477,44 @@ const Index = () => {
 
       {/* Featured Products */}
       {isSectionVisible("featured_products") && (
-        <section className="py-12 lg:py-20 bg-charcoal-dark">
+        <section className="py-8 lg:py-12 bg-secondary/50">
           <div className="container mx-auto px-4">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-12"
+              className="text-center mb-8"
             >
-              <h2 className="text-3xl lg:text-5xl font-display font-bold mb-4">
+              <h2 className="text-xl lg:text-2xl font-display font-bold mb-2">
                 Featured <span className="gradient-text">Products</span>
               </h2>
-              <p className="text-muted-foreground max-w-lg mx-auto">Hand-picked favorites from our collection.</p>
+              <p className="text-sm text-muted-foreground max-w-lg mx-auto">Hand-picked favorites from our collection.</p>
             </motion.div>
 
             {featuredLoading || productsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
                 ))}
               </div>
             ) : displayFeaturedProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
                 {displayFeaturedProducts.map((product, index) => (
                   <ProductCard key={product.id} product={product} index={index} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">No products available yet.</p>
-                <p className="text-sm">Products from active seller shops will appear here.</p>
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="mb-2 text-sm">No products available yet.</p>
+                <p className="text-xs">Products from active seller shops will appear here.</p>
               </div>
             )}
 
-            <div className="text-center mt-12">
+            <div className="text-center mt-8">
               <Link to="/products">
-                <Button variant="hero-outline" size="lg">
+                <Button variant="hero-outline" size="default">
                   View All Products
-                  <ArrowRight className="h-5 w-5" />
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
@@ -524,9 +524,9 @@ const Index = () => {
 
       {/* Trust Badges */}
       {isSectionVisible("trust_badges") && (
-        <section className="py-12 lg:py-16 border-t border-border/30">
+        <section className="py-8 lg:py-10 border-t border-border/30">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {trustBadges.map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -536,8 +536,8 @@ const Index = () => {
                   transition={{ delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <p className="text-3xl lg:text-4xl font-display font-bold gradient-text mb-2">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="text-2xl lg:text-3xl font-display font-bold gradient-text mb-1">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </motion.div>
               ))}
             </div>

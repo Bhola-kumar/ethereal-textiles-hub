@@ -154,10 +154,10 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="pt-20 lg:pt-24">
+      <main className="pt-16 lg:pt-20">
         {/* Breadcrumb */}
-        <div className="container mx-auto px-4 py-4">
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="container mx-auto px-4 py-3">
+          <nav className="flex items-center gap-2 text-xs text-muted-foreground">
             <Link to="/" className="hover:text-primary transition-colors">Home</Link>
             <span>/</span>
             <Link to="/products" className="hover:text-primary transition-colors">Shop</Link>
@@ -170,13 +170,13 @@ const ProductDetail = () => {
               </>
             )}
             <span>/</span>
-            <span className="text-foreground">{product.name}</span>
+            <span className="text-foreground truncate max-w-[150px]">{product.name}</span>
           </nav>
         </div>
 
         {/* Product Section */}
-        <section className="container mx-auto px-4 py-8">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
+        <section className="container mx-auto px-4 py-6">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
             {/* Image Gallery */}
             <div className="space-y-4">
               {/* Main Image */}
@@ -262,7 +262,7 @@ const ProductDetail = () => {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="space-y-6"
+              className="space-y-4"
             >
               {/* Shop Info */}
               {product.shop_name && (
@@ -297,10 +297,10 @@ const ProductDetail = () => {
 
               {/* Title */}
               <div>
-                <h1 className="text-3xl lg:text-4xl font-display font-bold mb-2">
+                <h1 className="text-xl lg:text-2xl font-display font-bold mb-1">
                   {product.name}
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {[product.fabric, product.pattern, product.color].filter(Boolean).join(' • ')}
                 </p>
               </div>
@@ -327,16 +327,16 @@ const ProductDetail = () => {
               )}
 
               {/* Price */}
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold gradient-text">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold gradient-text">
                   ₹{product.price.toLocaleString()}
                 </span>
                 {product.original_price && (
                   <>
-                    <span className="text-xl text-muted-foreground line-through">
+                    <span className="text-base text-muted-foreground line-through">
                       ₹{product.original_price.toLocaleString()}
                     </span>
-                    <span className="text-green-500 font-medium">
+                    <span className="text-green-500 text-sm font-medium">
                       Save ₹{(product.original_price - product.price).toLocaleString()}
                     </span>
                   </>

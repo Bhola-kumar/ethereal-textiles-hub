@@ -183,10 +183,10 @@ const Products = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="pt-20 lg:pt-24">
+      <main className="pt-16 lg:pt-20">
         {/* Hero Banner */}
-        <section className="relative py-12 lg:py-20 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-charcoal-dark to-background" />
+        <section className="relative py-8 lg:py-12 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 to-background" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
 
           <div className="container mx-auto px-4 relative z-10">
@@ -195,10 +195,10 @@ const Products = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <h1 className="text-4xl lg:text-6xl font-display font-bold mb-4">
+              <h1 className="text-2xl lg:text-4xl font-display font-bold mb-2">
                 Our <span className="gradient-text">Collection</span>
               </h1>
-              <p className="text-muted-foreground max-w-lg mx-auto">
+              <p className="text-sm text-muted-foreground max-w-lg mx-auto">
                 Discover our complete range of handcrafted gamchhas from verified sellers.
               </p>
             </motion.div>
@@ -206,8 +206,8 @@ const Products = () => {
         </section>
 
         {/* Toolbar */}
-        <section className="sticky top-16 lg:top-20 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
-          <div className="container mx-auto px-4 py-4">
+        <section className="sticky top-12 lg:top-14 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
+          <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Button
@@ -275,14 +275,14 @@ const Products = () => {
         </section>
 
         {/* Main Content */}
-        <section className="py-8">
+        <section className="py-6">
           <div className="container mx-auto px-4">
-            <div className="flex gap-8">
+            <div className="flex gap-6">
               {/* Desktop Filters Sidebar */}
-              <aside className="hidden lg:block w-64 flex-shrink-0">
-                <div className="sticky top-40">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-display font-semibold text-lg">Filters</h3>
+              <aside className="hidden lg:block w-56 flex-shrink-0">
+                <div className="sticky top-32">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display font-semibold text-base">Filters</h3>
                     {activeFiltersCount > 0 && (
                       <button onClick={clearAllFilters} className="text-sm text-primary hover:underline">
                         Clear all

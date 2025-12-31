@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cartStore';
 import NotificationDropdown from './NotificationDropdown';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,6 +69,9 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-1 lg:gap-2">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Track Order */}
             <Button
               variant="ghost"
