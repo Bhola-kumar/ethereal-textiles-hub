@@ -268,6 +268,22 @@ const Header = () => {
               
               {user ? (
                 <>
+                  {/* User Profile Section for Mobile */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.35 }}
+                    className="flex items-center gap-2 py-2 border-b border-border mb-2"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{user.user_metadata?.full_name || 'Account'}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </motion.div>
+
                   {isAdmin && (
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
@@ -316,10 +332,59 @@ const Header = () => {
                       </Link>
                     </motion.div>
                   )}
+
+                  {/* My Orders - Mobile */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
+                  >
+                    <Link
+                      to="/orders"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    >
+                      <ShoppingBag className="h-5 w-5" />
+                      My Orders
+                    </Link>
+                  </motion.div>
+
+                  {/* Settings - Mobile */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.55 }}
+                  >
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    >
+                      <Settings className="h-5 w-5" />
+                      Settings
+                    </Link>
+                  </motion.div>
+
+                  {/* Track Order - Mobile */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <Link
+                      to="/track-order"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    >
+                      <MapPin className="h-5 w-5" />
+                      Track Order
+                    </Link>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.65 }}
                   >
                     <Button
                       variant="outline"
