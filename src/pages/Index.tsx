@@ -78,7 +78,7 @@ const ProductCarousel = ({
 
         <div ref={scrollRef} className="netflix-carousel">
           {products.map((product, index) => (
-            <div key={product.id} className="w-[160px] lg:w-[180px]">
+            <div key={product.id} className="w-[160px] lg:w-[180px] h-full">
               <ProductCard product={product} index={index} />
             </div>
           ))}
@@ -100,9 +100,10 @@ const CategoryCard = ({
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
     transition={{ delay: index * 0.05 }}
+    className="h-full"
   >
-    <Link to={`/products?category=${category.id}`}>
-      <div className="group relative overflow-hidden rounded-lg aspect-[4/5] glass-card hover-lift">
+    <Link to={`/products?category=${category.id}`} className="h-full block">
+      <div className="group relative overflow-hidden rounded-lg aspect-[4/5] glass-card hover-lift h-full">
         <img
           src={
             category.image_url ||
@@ -113,7 +114,7 @@ const CategoryCard = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-3">
-          <h3 className="text-sm lg:text-base font-display font-bold mb-0.5 group-hover:text-primary transition-colors">
+          <h3 className="text-sm lg:text-base font-display font-bold mb-0.5 group-hover:text-primary transition-colors truncate">
             {category.name}
           </h3>
           <p className="text-[10px] text-muted-foreground">Explore</p>
@@ -337,7 +338,7 @@ const Index = () => {
             ) : categories.length > 0 ? (
               <div className="netflix-carousel">
                 {categories.map((category, index) => (
-                  <div key={category.id} className="w-[120px] lg:w-[150px] flex-shrink-0">
+                  <div key={category.id} className="w-[120px] lg:w-[150px] flex-shrink-0 h-full">
                     <CategoryCard category={category} index={index} />
                   </div>
                 ))}
@@ -375,7 +376,7 @@ const Index = () => {
             ) : shops.length > 0 ? (
               <div className="netflix-carousel">
                 {shops.map((shop, index) => (
-                  <div key={shop.id} className="w-[180px] lg:w-[200px] flex-shrink-0">
+                  <div key={shop.id} className="w-[180px] lg:w-[200px] flex-shrink-0 h-full">
                     <ShopBySellerCard shop={shop} index={index} />
                   </div>
                 ))}
@@ -498,9 +499,11 @@ const Index = () => {
                 ))}
               </div>
             ) : displayFeaturedProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4 auto-rows-fr">
                 {displayFeaturedProducts.map((product, index) => (
-                  <ProductCard key={product.id} product={product} index={index} />
+                  <div key={product.id} className="h-full">
+                    <ProductCard product={product} index={index} />
+                  </div>
                 ))}
               </div>
             ) : (

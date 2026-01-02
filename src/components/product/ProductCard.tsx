@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, Star, Eye, Store, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { 
-  useCartStore, 
-  Product, 
-  getProductImage, 
-  isProductInStock, 
+import {
+  useCartStore,
+  Product,
+  getProductImage,
+  isProductInStock,
   getOriginalPrice,
   isProductNew,
   isProductTrending,
-  getReviewsCount 
+  getReviewsCount
 } from '@/store/cartStore';
 import { toast } from 'sonner';
 
@@ -68,14 +68,14 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="group"
+      className="group h-full"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Link to={productLink}>
-<div className="relative overflow-hidden rounded-lg bg-card border border-border/50 transition-all duration-500 hover:border-primary/30 hover:shadow-card-hover">
+      <Link to={productLink} className="h-full block">
+        <div className="relative overflow-hidden rounded-lg bg-card border border-border/50 transition-all duration-500 hover:border-primary/30 hover:shadow-card-hover h-full flex flex-col">
           {/* Image Container */}
-          <div className="relative aspect-[3/4] overflow-hidden">
+          <div className="relative aspect-[3/4] overflow-hidden flex-shrink-0">
             <motion.img
               src={productImage}
               alt={product.name}
@@ -83,7 +83,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               animate={{ scale: isHovered ? 1.08 : 1 }}
               transition={{ duration: 0.6 }}
             />
-            
+
             {/* Overlay */}
             <motion.div
               className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"
@@ -124,9 +124,8 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 onClick={handleWishlistToggle}
               >
                 <Heart
-                  className={`h-3 w-3 transition-colors ${
-                    inWishlist ? 'fill-primary text-primary' : ''
-                  }`}
+                  className={`h-3 w-3 transition-colors ${inWishlist ? 'fill-primary text-primary' : ''
+                    }`}
                 />
               </Button>
               <Button
@@ -161,40 +160,46 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             </motion.div>
           </div>
 
-          {/* Product Info */}
-          <div className="p-2">
-            {/* Shop Info */}
-            {product.shop_name && (
-              <Link 
-                to={`/shop/${product.shop_slug}`} 
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 mb-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Store className="h-2.5 w-2.5" />
-                <span className="truncate">{product.shop_name}</span>
-                {product.shop_is_verified && (
-                  <CheckCircle className="h-2.5 w-2.5 text-primary flex-shrink-0" />
-                )}
-              </Link>
-            )}
+          {/* Product Info - Fixed height section */}
+          <div className="p-2 flex-1 flex flex-col min-h-[120px]">
+            {/* Shop Info - Fixed height */}
+            <div className="h-[14px] mb-1">
+              {product.shop_name && (
+                <Link
+                  to={`/shop/${product.shop_slug}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Store className="h-2.5 w-2.5 flex-shrink-0" />
+                  <span className="truncate">{product.shop_name}</span>
+                  {product.shop_is_verified && (
+                    <CheckCircle className="h-2.5 w-2.5 text-primary flex-shrink-0" />
+                  )}
+                </Link>
+              )}
+            </div>
 
-            <div className="flex items-center gap-1 mb-1">
-              <Star className="h-3 w-3 fill-primary text-primary" />
+            {/* Rating - Fixed height */}
+            <div className="flex items-center gap-1 mb-1 h-[16px]">
+              <Star className="h-3 w-3 fill-primary text-primary flex-shrink-0" />
               <span className="text-xs font-medium">{product.rating || 0}</span>
               <span className="text-[10px] text-muted-foreground">
                 ({reviewsCount})
               </span>
             </div>
 
-            <h3 className="font-display text-xs font-semibold text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
+            {/* Product Name - Fixed height */}
+            <h3 className="font-display text-xs font-semibold text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors h-[16px]">
               {product.name}
             </h3>
 
-            <p className="text-[10px] text-muted-foreground mb-1.5">
+            {/* Fabric/Pattern - Fixed height */}
+            <p className="text-[10px] text-muted-foreground mb-1.5 h-[14px] truncate">
               {product.fabric || 'Cotton'} • {product.pattern || 'Classic'}
             </p>
 
-            <div className="flex items-center gap-1.5">
+            {/* Price - Fixed height at bottom */}
+            <div className="flex items-center gap-1.5 mt-auto h-[20px]">
               <span className="text-sm font-bold text-primary">
                 ₹{product.price.toLocaleString()}
               </span>

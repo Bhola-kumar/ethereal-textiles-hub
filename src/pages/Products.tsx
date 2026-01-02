@@ -73,6 +73,7 @@ const Products = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
   const [sortBy, setSortBy] = useState('popularity');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Initialize from URL params
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -88,11 +89,17 @@ const Products = () => {
   // Sync with URL params on mount
   useEffect(() => {
     const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+
     if (categoryParam) {
       setSelectedCategories([categoryParam]);
     } else {
       // If no URL param, ensure state is clear (e.g. if navigating back)
       setSelectedCategories([]);
+    }
+
+    if (searchParam) {
+      setSearchQuery(searchParam);
     }
   }, [searchParams]);
 
@@ -123,6 +130,21 @@ const Products = () => {
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((p) => {
+        return (
+          p.name?.toLowerCase().includes(query) ||
+          p.description?.toLowerCase().includes(query) ||
+          p.fabric?.toLowerCase().includes(query) ||
+          p.pattern?.toLowerCase().includes(query) ||
+          p.color?.toLowerCase().includes(query) ||
+          p.shop_name?.toLowerCase().includes(query)
+        );
+      });
+    }
 
     if (selectedCategories.length > 0) {
       result = result.filter((p) => {
@@ -358,11 +380,13 @@ const Products = () => {
                   </div>
                 ) : (
                   <div
-                    className={`grid gap-4 lg:gap-6 ${gridCols === 2 ? 'grid-cols-2' : gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
+                    className={`grid gap-4 lg:gap-6 auto-rows-fr ${gridCols === 2 ? 'grid-cols-2' : gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
                       }`}
                   >
                     {filteredProducts.map((product, index) => (
-                      <ProductCard key={product.id} product={product} index={index} />
+                      <div key={product.id} className="h-full">
+                        <ProductCard product={product} index={index} />
+                      </div>
                     ))}
                   </div>
                 )}

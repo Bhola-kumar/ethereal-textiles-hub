@@ -242,8 +242,8 @@ const ProductDetail = () => {
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
                       className={`flex-shrink-0 w-14 h-14 lg:w-16 lg:h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === index
-                          ? 'border-primary ring-2 ring-primary/20'
-                          : 'border-border/50 hover:border-border'
+                        ? 'border-primary ring-2 ring-primary/20'
+                        : 'border-border/50 hover:border-border'
                         }`}
                     >
                       <img
@@ -285,8 +285,8 @@ const ProductDetail = () => {
                     <Star
                       key={i}
                       className={`h-4 w-4 ${i < Math.floor(product.rating || 0)
-                          ? 'fill-primary text-primary'
-                          : 'fill-muted text-muted'
+                        ? 'fill-primary text-primary'
+                        : 'fill-muted text-muted'
                         }`}
                     />
                   ))}
@@ -356,7 +356,7 @@ const ProductDetail = () => {
                   <span className="font-medium">Available Colors:</span>
                   <div className="flex flex-wrap gap-2">
                     {product.available_colors.map((color, index) => (
-                      <span 
+                      <span
                         key={index}
                         className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-sm cursor-pointer transition-colors border border-border/50"
                       >
@@ -373,7 +373,7 @@ const ProductDetail = () => {
                   <span className="font-medium">Available Sizes:</span>
                   <div className="flex flex-wrap gap-2">
                     {product.available_sizes.map((size, index) => (
-                      <span 
+                      <span
                         key={index}
                         className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-sm cursor-pointer transition-colors border border-border/50"
                       >
@@ -482,20 +482,22 @@ const ProductDetail = () => {
         <ProductReviews productId={product.id} productName={product.name} />
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <section className="py-8 lg:py-12 bg-secondary/50">
-            <div className="container mx-auto px-4">
+          <section className="py-6 lg:py-8 bg-secondary/50">
+            <div className="container mx-auto px-3">
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="text-xl lg:text-2xl font-display font-bold mb-6"
+                className="text-lg lg:text-xl font-display font-bold mb-4"
               >
                 You May Also Like
               </motion.h2>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 auto-rows-fr">
                 {relatedProducts.map((relatedProduct, index) => (
-                  <ProductCard key={relatedProduct.id} product={relatedProduct} index={index} />
+                  <div key={relatedProduct.id} className="h-full">
+                    <ProductCard product={relatedProduct} index={index} />
+                  </div>
                 ))}
               </div>
             </div>
