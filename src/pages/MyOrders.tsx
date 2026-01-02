@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck, Star } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck, Star, Ban, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,9 @@ import Footer from '@/components/layout/Footer';
 import OrderInvoice from '@/components/order/OrderInvoice';
 import OrderDetailsModal from '@/components/order/OrderDetailsModal';
 import WriteReviewModal from '@/components/order/WriteReviewModal';
+import { CancelOrderModal } from '@/components/order/CancelOrderModal';
+import { ReturnRequestModal } from '@/components/order/ReturnRequestModal';
+import { HelpDeskChat } from '@/components/helpdesk/HelpDeskChat';
 
 const statusSteps = [
   { key: 'pending', label: 'Placed', icon: Clock },
@@ -68,6 +71,8 @@ export default function MyOrders() {
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
   const [reviewItem, setReviewItem] = useState<{ productId: string; productName: string; productImage: string | null } | null>(null);
+  const [cancelOrder, setCancelOrder] = useState<Order | null>(null);
+  const [returnOrder, setReturnOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -279,15 +284,38 @@ export default function MyOrders() {
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button variant="outline" size="sm" onClick={() => setInvoiceOrder(order)}>
-                            <FileText className="h-4 w-4 mr-2" />
+                            <FileText className="h-4 w-4 mr-1" />
                             Invoice
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => setDetailsOrder(order)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
+                            <Eye className="h-4 w-4 mr-1" />
+                            Details
                           </Button>
+                          {/* Cancel button - only for pending/confirmed orders */}
+                          {(order.status === 'pending' || order.status === 'confirmed') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setCancelOrder(order)}
+                            >
+                              <Ban className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                          )}
+                          {/* Return button - only for delivered orders */}
+                          {order.status === 'delivered' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setReturnOrder(order)}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Return
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -358,7 +386,29 @@ export default function MyOrders() {
             productImage={reviewItem.productImage}
           />
         )}
+
+        {/* Cancel Order Modal */}
+        {cancelOrder && (
+          <CancelOrderModal
+            isOpen={!!cancelOrder}
+            onClose={() => setCancelOrder(null)}
+            orderId={cancelOrder.id}
+            orderNumber={cancelOrder.order_number}
+          />
+        )}
+
+        {/* Return Request Modal */}
+        {returnOrder && (
+          <ReturnRequestModal
+            isOpen={!!returnOrder}
+            onClose={() => setReturnOrder(null)}
+            order={returnOrder}
+          />
+        )}
       </main>
+
+      {/* Help Desk Chat */}
+      <HelpDeskChat />
 
       <Footer />
     </div>

@@ -404,7 +404,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
+          customer_cancel_reason: string | null
           decline_reason: string | null
           declined_at: string | null
           discount: number | null
@@ -422,7 +425,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
+          customer_cancel_reason?: string | null
           decline_reason?: string | null
           declined_at?: string | null
           discount?: number | null
@@ -440,7 +446,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
+          customer_cancel_reason?: string | null
           decline_reason?: string | null
           declined_at?: string | null
           discount?: number | null
@@ -589,6 +598,69 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      return_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string
+          order_item_id: string | null
+          processed_at: string | null
+          reason: string
+          refund_amount: number | null
+          refund_status: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id: string
+          order_item_id?: string | null
+          processed_at?: string | null
+          reason: string
+          refund_amount?: number | null
+          refund_status?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string
+          order_item_id?: string | null
+          processed_at?: string | null
+          reason?: string
+          refund_amount?: number | null
+          refund_status?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_requests_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       review_likes: {
         Row: {
@@ -803,6 +875,108 @@ export type Database = {
           upi_id?: string | null
         }
         Relationships: []
+      }
+      support_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_ai_response: boolean | null
+          is_from_support: boolean | null
+          ticket_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_ai_response?: boolean | null
+          is_from_support?: boolean | null
+          ticket_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_ai_response?: boolean | null
+          is_from_support?: boolean | null
+          ticket_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          priority: string
+          product_id: string | null
+          resolved_at: string | null
+          status: string
+          subject: string
+          ticket_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          priority?: string
+          product_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          ticket_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          priority?: string
+          product_id?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          ticket_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_shop"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
