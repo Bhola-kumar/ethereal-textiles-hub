@@ -175,14 +175,14 @@ const ProductDetail = () => {
         </div>
 
         {/* Product Section */}
-        <section className="container mx-auto px-4 py-6">
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
-            {/* Image Gallery */}
-            <div className="space-y-4">
+        <section className="container mx-auto px-4 py-4 lg:py-6">
+          <div className="grid lg:grid-cols-[45%_55%] gap-4 lg:gap-8">
+            {/* Image Gallery - Compact */}
+            <div className="space-y-3">
               {/* Main Image */}
               <motion.div
                 ref={imageContainerRef}
-                className="relative aspect-square overflow-hidden rounded-2xl bg-card border border-border/50 group"
+                className="relative aspect-[4/5] lg:aspect-square max-h-[400px] lg:max-h-[450px] overflow-hidden rounded-xl bg-card border border-border/50 group mx-auto w-full"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
@@ -201,33 +201,33 @@ const ProductDetail = () => {
                   <>
                     <button
                       onClick={() => setSelectedImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1))}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <ChevronLeft className="h-5 w-5" />
+                      <ChevronLeft className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setSelectedImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1))}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <ChevronRight className="h-5 w-5" />
+                      <ChevronRight className="h-4 w-4" />
                     </button>
                   </>
                 )}
 
                 {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                   {product.is_new && (
-                    <span className="px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg">
+                    <span className="px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-md">
                       NEW
                     </span>
                   )}
                   {product.is_trending && (
-                    <span className="px-3 py-1.5 bg-destructive text-destructive-foreground text-sm font-medium rounded-lg">
+                    <span className="px-2 py-1 bg-destructive text-destructive-foreground text-xs font-medium rounded-md">
                       TRENDING
                     </span>
                   )}
                   {discount > 0 && (
-                    <span className="px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg">
+                    <span className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded-md">
                       -{discount}% OFF
                     </span>
                   )}
@@ -236,12 +236,12 @@ const ProductDetail = () => {
 
               {/* Thumbnail Gallery */}
               {productImages.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto pb-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 justify-center">
                   {productImages.map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImageIndex(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === index
+                      className={`flex-shrink-0 w-14 h-14 lg:w-16 lg:h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === index
                           ? 'border-primary ring-2 ring-primary/20'
                           : 'border-border/50 hover:border-border'
                         }`}
@@ -259,10 +259,10 @@ const ProductDetail = () => {
 
             {/* Product Info */}
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="space-y-4"
+              className="space-y-3"
             >
               {/* Shop Info */}
               {product.shop_name && (
@@ -422,23 +422,23 @@ const ProductDetail = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-3">
                 <Button
                   variant="hero"
-                  size="xl"
+                  size="lg"
                   className="flex-1"
                   onClick={handleAddToCart}
                   disabled={!inStock}
                 >
-                  <ShoppingBag className="h-5 w-5" />
+                  <ShoppingBag className="h-4 w-4" />
                   {inCart ? 'Add More' : 'Add to Cart'}
                 </Button>
                 <Button
                   variant="hero-outline"
-                  size="xl"
+                  size="lg"
                   onClick={handleWishlistToggle}
                 >
-                  <Heart className={`h-5 w-5 ${inWishlist ? 'fill-primary' : ''}`} />
+                  <Heart className={`h-4 w-4 ${inWishlist ? 'fill-primary' : ''}`} />
                 </Button>
               </div>
 
@@ -450,12 +450,12 @@ const ProductDetail = () => {
               />
 
               {/* Features */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-border/50">
+              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-border/50">
                 {features.map((feature) => (
                   <div key={feature.title} className="text-center">
-                    <feature.icon className="h-6 w-6 mx-auto mb-2 text-primary" />
-                    <p className="text-sm font-medium">{feature.title}</p>
-                    <p className="text-xs text-muted-foreground">{feature.description}</p>
+                    <feature.icon className="h-5 w-5 mx-auto mb-1.5 text-primary" />
+                    <p className="text-xs font-medium">{feature.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{feature.description}</p>
                   </div>
                 ))}
               </div>
@@ -482,18 +482,18 @@ const ProductDetail = () => {
         <ProductReviews productId={product.id} productName={product.name} />
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <section className="py-12 lg:py-20 bg-charcoal-dark">
+          <section className="py-8 lg:py-12 bg-secondary/50">
             <div className="container mx-auto px-4">
               <motion.h2
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="text-2xl lg:text-4xl font-display font-bold mb-8"
+                className="text-xl lg:text-2xl font-display font-bold mb-6"
               >
                 You May Also Like
               </motion.h2>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
                 {relatedProducts.map((relatedProduct, index) => (
                   <ProductCard key={relatedProduct.id} product={relatedProduct} index={index} />
                 ))}

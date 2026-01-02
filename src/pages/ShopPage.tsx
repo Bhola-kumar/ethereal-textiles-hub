@@ -128,7 +128,7 @@ export default function ShopPage() {
         {/* Products Section */}
         <section className="container mx-auto px-4 py-8">
           <h2 className="text-2xl font-display font-bold mb-6">
-            Products from {shop.shop_name}
+            All Products
           </h2>
 
           {productsLoading ? (
