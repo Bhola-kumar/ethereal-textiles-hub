@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -32,10 +33,15 @@ import {
   Clock,
   XCircle,
   AlertCircle,
-  FileText
+  FileText,
+  MessageCircle,
+  RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import OrderInvoice from '@/components/order/OrderInvoice';
+import { OrderChatModal } from '@/components/order/OrderChatModal';
+import { ReturnStatusBadge } from '@/components/order/ReturnStatusBadge';
+import { useUpdateReturnRequest, ReturnRequest } from '@/hooks/useReturnRequests';
 
 interface OrderItem {
   id: string;
@@ -104,13 +110,59 @@ export default function SellerOrders() {
   const [shopInfo, setShopInfo] = useState<any>(null);
   const [declineReason, setDeclineReason] = useState('');
   const [customDeclineReason, setCustomDeclineReason] = useState('');
+  const [chatOrder, setChatOrder] = useState<{ id: string; orderNumber: string } | null>(null);
+  const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null);
+  const [returnResponse, setReturnResponse] = useState<{ status: string; notes: string }>({ status: '', notes: '' });
+  const updateReturnRequest = useUpdateReturnRequest();
 
   useEffect(() => {
     if (user) {
       fetchOrders();
       fetchShopInfo();
+      fetchReturnRequests();
     }
   }, [user]);
+
+  const fetchReturnRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('return_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setReturnRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching return requests:', error);
+    }
+  };
+
+  const getReturnRequest = (orderId: string) => {
+    return returnRequests.find(r => r.order_id === orderId);
+  };
+
+  const handleReturnResponse = async () => {
+    if (!selectedReturn || !returnResponse.status) return;
+    
+    try {
+      await updateReturnRequest.mutateAsync({
+        id: selectedReturn.id,
+        status: returnResponse.status,
+        admin_notes: returnResponse.notes || undefined,
+        refund_status: returnResponse.status === 'approved' ? 'processing' : 
+                       returnResponse.status === 'completed' ? 'processed' : undefined,
+      });
+      
+      setShowReturnDialog(false);
+      setSelectedReturn(null);
+      setReturnResponse({ status: '', notes: '' });
+      fetchReturnRequests();
+    } catch (error) {
+      console.error('Error updating return request:', error);
+    }
+  };
 
   const fetchShopInfo = async () => {
     const { data } = await supabase
@@ -445,6 +497,13 @@ export default function SellerOrders() {
                       <Badge className={getPaymentColor(order.payment_status)}>
                         {order.payment_status}
                       </Badge>
+                      {/* Show return request status */}
+                      {getReturnRequest(order.id) && (
+                        <ReturnStatusBadge 
+                          status={getReturnRequest(order.id)!.status}
+                          refundStatus={getReturnRequest(order.id)!.refund_status}
+                        />
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-muted-foreground">
@@ -465,11 +524,34 @@ export default function SellerOrders() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setChatOrder({ id: order.id, orderNumber: order.order_number })}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        Chat
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleOpenUpdateDialog(order)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Manage
                       </Button>
+                      {/* Handle Return Request button */}
+                      {getReturnRequest(order.id) && getReturnRequest(order.id)!.status === 'pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-orange-600 hover:text-orange-700"
+                          onClick={() => {
+                            setSelectedReturn(getReturnRequest(order.id)!);
+                            setShowReturnDialog(true);
+                          }}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-1" />
+                          Handle Return
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
@@ -794,6 +876,90 @@ export default function SellerOrders() {
           onOpenChange={(open) => !open && setInvoiceOrder(null)}
         />
       )}
+
+      {/* Chat with Customer Modal */}
+      {chatOrder && (
+        <OrderChatModal
+          isOpen={!!chatOrder}
+          onClose={() => setChatOrder(null)}
+          orderId={chatOrder.id}
+          orderNumber={chatOrder.orderNumber}
+          userType="seller"
+        />
+      )}
+
+      {/* Handle Return Request Dialog */}
+      <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-orange-500" />
+              Handle Return Request
+            </DialogTitle>
+            <DialogDescription>
+              Review the customer's return request and respond accordingly.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReturn && (
+            <div className="space-y-4">
+              <div className="p-3 bg-accent/30 rounded-lg">
+                <p className="text-sm font-medium mb-1">Return Reason:</p>
+                <p className="text-sm text-muted-foreground">{selectedReturn.reason}</p>
+                {selectedReturn.description && (
+                  <>
+                    <p className="text-sm font-medium mt-2 mb-1">Additional Details:</p>
+                    <p className="text-sm text-muted-foreground">{selectedReturn.description}</p>
+                  </>
+                )}
+                {selectedReturn.refund_amount && (
+                  <p className="text-sm font-medium mt-2">
+                    Refund Requested: <span className="text-primary">₹{selectedReturn.refund_amount.toLocaleString()}</span>
+                  </p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Response *</Label>
+                <Select
+                  value={returnResponse.status}
+                  onValueChange={(value) => setReturnResponse(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select response" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="approved">Approve Return</SelectItem>
+                    <SelectItem value="rejected">Reject Return</SelectItem>
+                    <SelectItem value="processing">Mark as Processing</SelectItem>
+                    <SelectItem value="completed">Mark as Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Notes for Customer</Label>
+                <Textarea
+                  placeholder="Add notes or instructions for the customer..."
+                  value={returnResponse.notes}
+                  onChange={(e) => setReturnResponse(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReturnDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReturnResponse}
+              disabled={!returnResponse.status || updateReturnRequest.isPending}
+            >
+              {updateReturnRequest.isPending ? 'Submitting...' : 'Submit Response'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
