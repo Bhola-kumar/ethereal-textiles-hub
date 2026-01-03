@@ -405,6 +405,7 @@ export default function SellerShop() {
                           src={shopForm.logo_url} 
                           alt="Shop Logo" 
                           className="w-24 h-24 object-cover rounded-lg border border-border"
+                          crossOrigin="anonymous"
                         />
                         <Button
                           variant="destructive"
@@ -495,6 +496,7 @@ export default function SellerShop() {
                         src={shopForm.banner_url} 
                         alt="Shop Banner" 
                         className="w-full h-32 object-cover rounded-lg border border-border"
+                        crossOrigin="anonymous"
                       />
                       <Button
                         variant="destructive"

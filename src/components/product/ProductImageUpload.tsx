@@ -213,6 +213,7 @@ export default function ProductImageUpload({ images, onImagesChange }: ProductIm
                 src={url}
                 alt={`Product ${index + 1}`}
                 className="w-full h-full object-cover rounded-lg border border-border"
+                crossOrigin="anonymous"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/placeholder.svg';
                 }}

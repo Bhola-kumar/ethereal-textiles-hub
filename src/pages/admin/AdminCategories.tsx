@@ -373,7 +373,7 @@ export default function AdminCategories() {
                     
                     {formData.image_url ? (
                       <div className="relative">
-                        <img src={formData.image_url} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-border" />
+                        <img src={formData.image_url} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-border" crossOrigin="anonymous" />
                         <Button
                           type="button"
                           variant="destructive"

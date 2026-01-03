@@ -397,6 +397,7 @@ export default function AdminCollections() {
                           src={formData.image_url}
                           alt="Preview"
                           className="w-full h-32 object-cover"
+                          crossOrigin="anonymous"
                           onError={(e) => {
                             e.currentTarget.src = 'https://via.placeholder.com/800x300?text=Invalid+Image';
                           }}

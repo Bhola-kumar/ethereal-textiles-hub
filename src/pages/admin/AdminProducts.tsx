@@ -278,7 +278,7 @@ export default function AdminProducts() {
                       <tr key={product.id} className="hover:bg-accent/30 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            {product.images?.[0] && <img src={product.images[0]} alt={product.name} className="w-12 h-12 object-cover rounded" />}
+                            {product.images?.[0] && <img src={product.images[0]} alt={product.name} className="w-12 h-12 object-cover rounded" crossOrigin="anonymous" />}
                             <div><p className="font-medium text-foreground">{product.name}</p><p className="text-sm text-muted-foreground">{product.fabric}</p></div>
                           </div>
                         </td>

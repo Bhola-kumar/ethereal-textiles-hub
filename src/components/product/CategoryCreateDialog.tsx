@@ -171,6 +171,7 @@ export default function CategoryCreateDialog({
                   src={formData.image_url} 
                   alt="Preview" 
                   className="w-full h-32 object-cover rounded-lg border border-border" 
+                  crossOrigin="anonymous"
                 />
                 <Button
                   type="button"

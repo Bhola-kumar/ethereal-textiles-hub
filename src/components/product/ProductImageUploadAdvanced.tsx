@@ -289,6 +289,7 @@ export default function ProductImageUploadAdvanced({
                   src={img.url}
                   alt={`Product ${index + 1}`}
                   className="w-full h-full object-cover"
+                  crossOrigin="anonymous"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                   }}
