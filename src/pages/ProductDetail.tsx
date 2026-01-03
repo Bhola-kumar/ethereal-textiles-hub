@@ -18,6 +18,8 @@ const ProductDetail = () => {
   const { data: product, isLoading, error } = usePublicProduct(id || '');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, isInCart } = useCartStore();
@@ -353,15 +355,20 @@ const ProductDetail = () => {
               {/* Available Colors */}
               {product.available_colors && product.available_colors.length > 0 && (
                 <div className="space-y-2">
-                  <span className="font-medium">Available Colors:</span>
+                  <span className="font-medium">Select Color:</span>
                   <div className="flex flex-wrap gap-2">
                     {product.available_colors.map((color, index) => (
-                      <span
+                      <button
                         key={index}
-                        className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-sm cursor-pointer transition-colors border border-border/50"
+                        onClick={() => setSelectedColor(selectedColor === color ? null : color)}
+                        className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all border ${
+                          selectedColor === color 
+                            ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20' 
+                            : 'bg-secondary hover:bg-secondary/80 border-border/50'
+                        }`}
                       >
                         {color}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -370,17 +377,34 @@ const ProductDetail = () => {
               {/* Available Sizes */}
               {product.available_sizes && product.available_sizes.length > 0 && (
                 <div className="space-y-2">
-                  <span className="font-medium">Available Sizes:</span>
+                  <span className="font-medium">Select Size:</span>
                   <div className="flex flex-wrap gap-2">
                     {product.available_sizes.map((size, index) => (
-                      <span
+                      <button
                         key={index}
-                        className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-sm cursor-pointer transition-colors border border-border/50"
+                        onClick={() => setSelectedSize(selectedSize === size ? null : size)}
+                        className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all border min-w-[40px] ${
+                          selectedSize === size 
+                            ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20' 
+                            : 'bg-secondary hover:bg-secondary/80 border-border/50'
+                        }`}
                       >
                         {size}
-                      </span>
+                      </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Selected Variant Display */}
+              {(selectedColor || selectedSize) && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Selected: </span>
+                    <span className="font-medium">
+                      {[selectedColor, selectedSize].filter(Boolean).join(' / ')}
+                    </span>
+                  </p>
                 </div>
               )}
 

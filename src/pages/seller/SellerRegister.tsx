@@ -14,6 +14,7 @@ import { Store, ArrowRight, CheckCircle, CreditCard } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { useFormPersistence } from '@/hooks/useFormPersistence';
 
 const shopSchema = z.object({
   shop_name: z.string().min(3, 'Shop name must be at least 3 characters').max(100),
@@ -31,6 +32,36 @@ const shopSchema = z.object({
   payment_instructions: z.string().max(500).optional(),
 });
 
+interface ShopFormData {
+  shop_name: string;
+  description: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  gst_number: string;
+  upi_id: string;
+  accepts_cod: boolean;
+  payment_instructions: string;
+}
+
+const initialFormData: ShopFormData = {
+  shop_name: '',
+  description: '',
+  phone: '',
+  email: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  gst_number: '',
+  upi_id: '',
+  accepts_cod: true,
+  payment_instructions: '',
+};
+
 export default function SellerRegister() {
   const { user, isSeller, loading } = useAuth();
   const navigate = useNavigate();
@@ -38,20 +69,12 @@ export default function SellerRegister() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingShop, setIsCheckingShop] = useState(true);
   const [canRegister, setCanRegister] = useState(false);
-  const [formData, setFormData] = useState({
-    shop_name: '',
-    description: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    gst_number: '',
-    upi_id: '',
-    accepts_cod: true,
-    payment_instructions: '',
-  });
+  
+  // Form persistence - data survives tab switches
+  const { formData, setFormData, clearPersistedData } = useFormPersistence<ShopFormData>(
+    'seller_register',
+    initialFormData
+  );
 
   // Redirect logic - only run once after loading completes
   useEffect(() => {
@@ -163,6 +186,7 @@ export default function SellerRegister() {
       }
 
       toast.success('Shop registered successfully!');
+      clearPersistedData(); // Clear form data on success
       setStep(4);
 
       // Refresh session to get new role

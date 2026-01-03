@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Edit, Trash2, Search, Image, X, Save, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useFormPersistence, createFormKey } from '@/hooks/useFormPersistence';
 
 interface FeaturedCollection {
   id: string;
@@ -29,6 +30,34 @@ interface FeaturedCollection {
   created_at: string;
 }
 
+interface CollectionFormData {
+  title: string;
+  subtitle: string;
+  description: string;
+  image_url: string;
+  link_url: string;
+  link_text: string;
+  badge_text: string;
+  display_order: string;
+  is_active: boolean;
+  start_date: string;
+  end_date: string;
+}
+
+const initialFormData: CollectionFormData = {
+  title: '',
+  subtitle: '',
+  description: '',
+  image_url: '',
+  link_url: '/products',
+  link_text: 'Explore Collection',
+  badge_text: '',
+  display_order: '0',
+  is_active: true,
+  start_date: '',
+  end_date: '',
+};
+
 export default function AdminCollections() {
   const { user } = useAuth();
   const [collections, setCollections] = useState<FeaturedCollection[]>([]);
@@ -38,19 +67,11 @@ export default function AdminCollections() {
   const [editingCollection, setEditingCollection] = useState<FeaturedCollection | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    subtitle: '',
-    description: '',
-    image_url: '',
-    link_url: '/products',
-    link_text: 'Explore Collection',
-    badge_text: '',
-    display_order: '0',
-    is_active: true,
-    start_date: '',
-    end_date: '',
-  });
+  // Form persistence
+  const { formData, setFormData, clearPersistedData } = useFormPersistence<CollectionFormData>(
+    createFormKey('admin_collection', editingCollection?.id),
+    initialFormData
+  );
 
   useEffect(() => {
     fetchCollections();
@@ -69,19 +90,8 @@ export default function AdminCollections() {
   };
 
   const resetForm = () => {
-    setFormData({
-      title: '',
-      subtitle: '',
-      description: '',
-      image_url: '',
-      link_url: '/products',
-      link_text: 'Explore Collection',
-      badge_text: '',
-      display_order: '0',
-      is_active: true,
-      start_date: '',
-      end_date: '',
-    });
+    setFormData(initialFormData);
+    clearPersistedData();
     setEditingCollection(null);
   };
 

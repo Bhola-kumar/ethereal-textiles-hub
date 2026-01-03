@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +19,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Edit, Trash2, Package, Search, X, Save, Star, FolderPlus } from 'lucide-react';
-import ProductImageUpload from '@/components/product/ProductImageUpload';
+import ProductImageUploadAdvanced, { ProductImage } from '@/components/product/ProductImageUploadAdvanced';
+import CategoryCreateDialog from '@/components/product/CategoryCreateDialog';
+import { useFormPersistence, createFormKey } from '@/hooks/useFormPersistence';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -39,6 +41,7 @@ interface Product {
   original_price: number | null;
   stock: number;
   images: string[] | null;
+  image_variants?: ProductImage[] | null;
   is_published: boolean;
   is_trending: boolean;
   is_new: boolean;
@@ -54,6 +57,52 @@ interface Product {
   available_colors: string[] | null;
   available_sizes: string[] | null;
 }
+
+interface ProductFormData {
+  name: string;
+  description: string;
+  price: string;
+  original_price: string;
+  category_id: string;
+  fabric: string;
+  color: string;
+  pattern: string;
+  stock: string;
+  images: ProductImage[];
+  care_instructions: string;
+  is_published: boolean;
+  is_trending: boolean;
+  is_new: boolean;
+  length: string;
+  width: string;
+  gsm: string;
+  size: string;
+  available_colors: string;
+  available_sizes: string;
+}
+
+const initialFormData: ProductFormData = {
+  name: '',
+  description: '',
+  price: '',
+  original_price: '',
+  category_id: '',
+  fabric: '',
+  color: '',
+  pattern: '',
+  stock: '',
+  images: [],
+  care_instructions: '',
+  is_published: false,
+  is_trending: false,
+  is_new: true,
+  length: '',
+  width: '',
+  gsm: '',
+  size: '',
+  available_colors: '',
+  available_sizes: '',
+};
 
 const productSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(200),
@@ -91,33 +140,29 @@ export default function SellerProducts() {
   const [featureProductId, setFeatureProductId] = useState<string | null>(null);
   const [featureMessage, setFeatureMessage] = useState('');
 
-  // New category creation state
-  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  // Category creation dialog state
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    original_price: '',
-    category_id: '',
-    fabric: '',
-    color: '',
-    pattern: '',
-    stock: '',
-    images: [] as string[],
-    care_instructions: '',
-    is_published: false,
-    is_trending: false,
-    is_new: true,
-    length: '',
-    width: '',
-    gsm: '',
-    size: '',
-    available_colors: '',
-    available_sizes: '',
-  });
+  // Form persistence
+  const { 
+    formData, 
+    setFormData, 
+    clearPersistedData, 
+    hasPersistedData 
+  } = useFormPersistence<ProductFormData>(
+    createFormKey('seller_product', editingProduct?.id),
+    initialFormData
+  );
+
+  // Parse available colors/sizes for image variant linking
+  const availableColorsList = formData.available_colors
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  const availableSizesList = formData.available_sizes
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 
   useEffect(() => {
     if (user) {
@@ -189,56 +234,15 @@ export default function SellerProducts() {
     return featureRequests.find(r => r.product_id === productId);
   };
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error('Category name is required');
-      return;
-    }
-
-    setIsCreatingCategory(true);
-    try {
-      const slug = newCategoryName
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-') + '-' + Date.now();
-
-      const { data, error } = await supabase
-        .from('categories')
-        .insert({
-          name: newCategoryName.trim(),
-          slug: slug,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast.success('Category created successfully!');
-      setNewCategoryName('');
-      setShowNewCategoryInput(false);
-      await refetchCategories();
-      
-      // Set the newly created category as selected
-      if (data) {
-        setFormData({ ...formData, category_id: data.id });
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create category');
-    } finally {
-      setIsCreatingCategory(false);
-    }
+  const handleCategoryCreated = async (category: { id: string; name: string }) => {
+    await refetchCategories();
+    setFormData(prev => ({ ...prev, category_id: category.id }));
   };
 
   const resetForm = () => {
-    setFormData({
-      name: '', description: '', price: '', original_price: '',
-      category_id: '', fabric: '', color: '', pattern: '', stock: '',
-      images: [], care_instructions: '', is_published: false, is_trending: false, is_new: true,
-      length: '', width: '', gsm: '', size: '', available_colors: '', available_sizes: '',
-    });
+    setFormData(initialFormData);
+    clearPersistedData();
     setEditingProduct(null);
-    setShowNewCategoryInput(false);
-    setNewCategoryName('');
   };
 
   const handleAddNew = () => {
@@ -248,6 +252,8 @@ export default function SellerProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    // Convert string[] images to ProductImage[]
+    const imageVariants: ProductImage[] = (product.images || []).map((url) => ({ url }));
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -258,7 +264,7 @@ export default function SellerProducts() {
       color: product.color || '',
       pattern: product.pattern || '',
       stock: product.stock.toString(),
-      images: product.images || [],
+      images: imageVariants,
       care_instructions: product.care_instructions?.join(', ') || '',
       is_published: product.is_published || false,
       is_trending: product.is_trending || false,
@@ -312,7 +318,8 @@ export default function SellerProducts() {
 
     setIsSubmitting(true);
     try {
-      const imageUrls = formData.images;
+      // Extract just URLs from ProductImage objects for database storage
+      const imageUrls = formData.images.map(img => img.url);
       const careInstructions = formData.care_instructions.split(',').map(s => s.trim()).filter(Boolean);
       const availableColors = formData.available_colors.split(',').map(s => s.trim()).filter(Boolean);
       const availableSizes = formData.available_sizes.split(',').map(s => s.trim()).filter(Boolean);
@@ -622,63 +629,23 @@ export default function SellerProducts() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-sm font-medium">Category</Label>
-                        {showNewCategoryInput ? (
-                          <div className="mt-1.5 space-y-2">
-                            <Input
-                              value={newCategoryName}
-                              onChange={e => setNewCategoryName(e.target.value)}
-                              placeholder="New category name"
-                              autoFocus
-                            />
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={handleCreateCategory}
-                                disabled={isCreatingCategory}
-                                className="flex-1"
-                              >
-                                {isCreatingCategory ? (
-                                  <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-background" />
-                                ) : (
-                                  <>
-                                    <Save className="h-3 w-3 mr-1" />
-                                    Create
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setShowNewCategoryInput(false);
-                                  setNewCategoryName('');
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-1.5 flex gap-2">
-                            <Select value={formData.category_id} onValueChange={v => setFormData({...formData, category_id: v})}>
-                              <SelectTrigger className="flex-1"><SelectValue placeholder="Select" /></SelectTrigger>
-                              <SelectContent>
-                                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={() => setShowNewCategoryInput(true)}
-                              title="Add new category"
-                            >
-                              <FolderPlus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
+                        <div className="mt-1.5 flex gap-2">
+                          <Select value={formData.category_id} onValueChange={v => setFormData({...formData, category_id: v})}>
+                            <SelectTrigger className="flex-1"><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                              {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setShowCategoryDialog(true)}
+                            title="Add new category"
+                          >
+                            <FolderPlus className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Fabric</Label>
@@ -790,9 +757,11 @@ export default function SellerProducts() {
                       </div>
                     </div>
 
-                    <ProductImageUpload 
+                    <ProductImageUploadAdvanced 
                       images={formData.images}
                       onImagesChange={(images) => setFormData({...formData, images})}
+                      availableColors={availableColorsList}
+                      availableSizes={availableSizesList}
                     />
 
                     <div>
@@ -919,6 +888,13 @@ export default function SellerProducts() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Category Create Dialog */}
+      <CategoryCreateDialog
+        open={showCategoryDialog}
+        onOpenChange={setShowCategoryDialog}
+        onCategoryCreated={handleCategoryCreated}
+      />
     </div>
   );
 }
