@@ -476,7 +476,7 @@ const ProductDetail = () => {
 
               {/* Pincode Availability Check */}
               <div className="pt-4">
-                <PincodeChecker />
+                <PincodeChecker deliverablePincodes={product.deliverable_pincodes} />
               </div>
 
               {/* Seller Payment Info */}

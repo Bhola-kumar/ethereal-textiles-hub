@@ -30,6 +30,7 @@ export type ProductWithShop = {
   size: string | null;
   available_colors: string[] | null;
   available_sizes: string[] | null;
+  deliverable_pincodes?: string[] | null;
   categories?: Tables<'categories'> | null;
   shop_id?: string | null;
   shop_name?: string | null;
@@ -184,6 +185,7 @@ export function usePublicProduct(slug: string) {
         size: product.size,
         available_colors: product.available_colors,
         available_sizes: product.available_sizes,
+        deliverable_pincodes: (product as any).deliverable_pincodes || null,
         shop_id: product.shop_id,
         shop_name: product.shop_name,
         shop_slug: product.shop_slug,
