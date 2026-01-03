@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck, Star, Ban, RotateCcw } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, XCircle, ArrowLeft, Eye, RefreshCcw, FileText, Box, PackageCheck, Star, Ban, RotateCcw, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,10 @@ import OrderDetailsModal from '@/components/order/OrderDetailsModal';
 import WriteReviewModal from '@/components/order/WriteReviewModal';
 import { CancelOrderModal } from '@/components/order/CancelOrderModal';
 import { ReturnRequestModal } from '@/components/order/ReturnRequestModal';
+import { OrderChatModal } from '@/components/order/OrderChatModal';
+import { ReturnStatusBadge } from '@/components/order/ReturnStatusBadge';
 import { HelpDeskChat } from '@/components/helpdesk/HelpDeskChat';
+import { useReturnRequests } from '@/hooks/useReturnRequests';
 
 const statusSteps = [
   { key: 'pending', label: 'Placed', icon: Clock },
@@ -68,11 +71,18 @@ export default function MyOrders() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: orders, isLoading, refetch } = useOrders(user?.id);
+  const { data: returnRequests } = useReturnRequests(user?.id);
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
   const [reviewItem, setReviewItem] = useState<{ productId: string; productName: string; productImage: string | null } | null>(null);
   const [cancelOrder, setCancelOrder] = useState<Order | null>(null);
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
+  const [chatOrder, setChatOrder] = useState<{ id: string; orderNumber: string } | null>(null);
+
+  // Helper to get return request for an order
+  const getReturnRequest = (orderId: string) => {
+    return returnRequests?.find(r => r.order_id === orderId);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -179,6 +189,13 @@ export default function MyOrders() {
                           <Badge className={paymentColors[order.payment_status]}>
                             {order.payment_status}
                           </Badge>
+                          {/* Show return request status if exists */}
+                          {getReturnRequest(order.id) && (
+                            <ReturnStatusBadge 
+                              status={getReturnRequest(order.id)!.status}
+                              refundStatus={getReturnRequest(order.id)!.refund_status}
+                            />
+                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -293,6 +310,15 @@ export default function MyOrders() {
                             <Eye className="h-4 w-4 mr-1" />
                             Details
                           </Button>
+                          {/* Chat with Seller button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setChatOrder({ id: order.id, orderNumber: order.order_number })}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-1" />
+                            Chat
+                          </Button>
                           {/* Cancel button - only for pending/confirmed orders */}
                           {(order.status === 'pending' || order.status === 'confirmed') && (
                             <Button
@@ -305,8 +331,8 @@ export default function MyOrders() {
                               Cancel
                             </Button>
                           )}
-                          {/* Return button - only for delivered orders */}
-                          {order.status === 'delivered' && (
+                          {/* Return button - only for delivered orders without pending return */}
+                          {order.status === 'delivered' && !getReturnRequest(order.id) && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -403,6 +429,17 @@ export default function MyOrders() {
             isOpen={!!returnOrder}
             onClose={() => setReturnOrder(null)}
             order={returnOrder}
+          />
+        )}
+
+        {/* Chat with Seller Modal */}
+        {chatOrder && (
+          <OrderChatModal
+            isOpen={!!chatOrder}
+            onClose={() => setChatOrder(null)}
+            orderId={chatOrder.id}
+            orderNumber={chatOrder.orderNumber}
+            userType="customer"
           />
         )}
       </main>
