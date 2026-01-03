@@ -24,6 +24,7 @@ export type ProductWithShop = {
   seller_id: string | null;
   created_at: string;
   updated_at: string;
+  deliverable_pincodes: string[] | null;
   length: number | null;
   width: number | null;
   gsm: number | null;
@@ -90,7 +91,7 @@ export function usePublicProducts(filters?: {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Map view columns to our ProductWithShop type
       return (data || []).map(p => ({
         id: p.id!,
@@ -114,6 +115,7 @@ export function usePublicProducts(filters?: {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,
@@ -146,7 +148,7 @@ export function usePublicProduct(slug: string) {
 
       if (error) throw error;
       if (!product?.shop_id) throw new Error('Product not found or shop is not active');
-      
+
       // For single product, also fetch payment info from the shop
       // Only sellers can see their own shop's sensitive data, so we use shops_public for general info
       // Payment info needs to be fetched separately using the seller_id
@@ -155,7 +157,7 @@ export function usePublicProduct(slug: string) {
         .select('upi_id, payment_qr_url, accepts_cod, payment_instructions')
         .eq('id', product.shop_id)
         .single();
-      
+
       return {
         id: product.id!,
         name: product.name!,
@@ -178,6 +180,7 @@ export function usePublicProduct(slug: string) {
         seller_id: product.seller_id,
         created_at: product.created_at!,
         updated_at: product.updated_at!,
+        deliverable_pincodes: product.deliverable_pincodes,
         length: product.length,
         width: product.width,
         gsm: product.gsm,
@@ -219,7 +222,7 @@ export function useTrendingPublicProducts() {
         .limit(10);
 
       if (error) throw error;
-      
+
       return (data || []).map(p => ({
         id: p.id!,
         name: p.name!,
@@ -242,6 +245,7 @@ export function useTrendingPublicProducts() {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,
@@ -274,7 +278,7 @@ export function useNewPublicProducts() {
         .limit(10);
 
       if (error) throw error;
-      
+
       return (data || []).map(p => ({
         id: p.id!,
         name: p.name!,
@@ -297,6 +301,7 @@ export function useNewPublicProducts() {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,
@@ -328,7 +333,7 @@ export function useShopProducts(shopSlug: string) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       return (data || []).map(p => ({
         id: p.id!,
         name: p.name!,
@@ -351,6 +356,7 @@ export function useShopProducts(shopSlug: string) {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
+        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,

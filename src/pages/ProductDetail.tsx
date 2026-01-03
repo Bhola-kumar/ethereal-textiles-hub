@@ -12,6 +12,7 @@ import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import SellerPaymentInfo from '@/components/product/SellerPaymentInfo';
+import PincodeChecker from '@/components/product/PincodeChecker';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -361,11 +362,10 @@ const ProductDetail = () => {
                       <button
                         key={index}
                         onClick={() => setSelectedColor(selectedColor === color ? null : color)}
-                        className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all border ${
-                          selectedColor === color 
-                            ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20' 
-                            : 'bg-secondary hover:bg-secondary/80 border-border/50'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all border ${selectedColor === color
+                          ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20'
+                          : 'bg-secondary hover:bg-secondary/80 border-border/50'
+                          }`}
                       >
                         {color}
                       </button>
@@ -383,11 +383,10 @@ const ProductDetail = () => {
                       <button
                         key={index}
                         onClick={() => setSelectedSize(selectedSize === size ? null : size)}
-                        className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all border min-w-[40px] ${
-                          selectedSize === size 
-                            ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20' 
-                            : 'bg-secondary hover:bg-secondary/80 border-border/50'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all border min-w-[40px] ${selectedSize === size
+                          ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/20'
+                          : 'bg-secondary hover:bg-secondary/80 border-border/50'
+                          }`}
                       >
                         {size}
                       </button>
@@ -464,6 +463,11 @@ const ProductDetail = () => {
                 >
                   <Heart className={`h-4 w-4 ${inWishlist ? 'fill-primary' : ''}`} />
                 </Button>
+              </div>
+
+              {/* Pincode Availability Check */}
+              <div className="pt-4">
+                <PincodeChecker deliverablePincodes={product.deliverable_pincodes} />
               </div>
 
               {/* Seller Payment Info */}
