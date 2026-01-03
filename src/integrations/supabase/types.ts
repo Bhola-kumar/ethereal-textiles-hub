@@ -476,6 +476,7 @@ export type Database = {
           category_id: string | null
           color: string | null
           created_at: string
+          deliverable_pincodes: string[] | null
           description: string | null
           fabric: string | null
           gsm: number | null
@@ -505,6 +506,7 @@ export type Database = {
           category_id?: string | null
           color?: string | null
           created_at?: string
+          deliverable_pincodes?: string[] | null
           description?: string | null
           fabric?: string | null
           gsm?: number | null
@@ -534,6 +536,7 @@ export type Database = {
           category_id?: string | null
           color?: string | null
           created_at?: string
+          deliverable_pincodes?: string[] | null
           description?: string | null
           fabric?: string | null
           gsm?: number | null
@@ -1045,6 +1048,7 @@ export type Database = {
           category_id: string | null
           color: string | null
           created_at: string | null
+          deliverable_pincodes: string[] | null
           description: string | null
           fabric: string | null
           gsm: number | null

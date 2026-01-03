@@ -56,6 +56,7 @@ interface Product {
   size: string | null;
   available_colors: string[] | null;
   available_sizes: string[] | null;
+  deliverable_pincodes: string[] | null;
 }
 
 interface ProductFormData {
@@ -277,7 +278,7 @@ export default function SellerProducts() {
       size: product.size || '',
       available_colors: product.available_colors?.join(', ') || '',
       available_sizes: product.available_sizes?.join(', ') || '',
-      deliverable_pincodes: '',
+      deliverable_pincodes: product.deliverable_pincodes?.join(', ') || '',
     });
     setShowForm(true);
   };
