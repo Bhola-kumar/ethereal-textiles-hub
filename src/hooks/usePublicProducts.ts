@@ -24,7 +24,6 @@ export type ProductWithShop = {
   seller_id: string | null;
   created_at: string;
   updated_at: string;
-  deliverable_pincodes: string[] | null;
   length: number | null;
   width: number | null;
   gsm: number | null;
@@ -115,7 +114,6 @@ export function usePublicProducts(filters?: {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
-        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,
@@ -180,7 +178,6 @@ export function usePublicProduct(slug: string) {
         seller_id: product.seller_id,
         created_at: product.created_at!,
         updated_at: product.updated_at!,
-        deliverable_pincodes: product.deliverable_pincodes,
         length: product.length,
         width: product.width,
         gsm: product.gsm,
@@ -245,7 +242,6 @@ export function useTrendingPublicProducts() {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
-        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,
@@ -301,7 +297,6 @@ export function useNewPublicProducts() {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
-        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,
@@ -356,7 +351,6 @@ export function useShopProducts(shopSlug: string) {
         seller_id: p.seller_id,
         created_at: p.created_at!,
         updated_at: p.updated_at!,
-        deliverable_pincodes: p.deliverable_pincodes,
         length: p.length,
         width: p.width,
         gsm: p.gsm,

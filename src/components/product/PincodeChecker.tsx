@@ -5,7 +5,7 @@ import { Truck, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PincodeCheckerProps {
-    deliverablePincodes: string[] | null;
+    deliverablePincodes?: string[] | null;
 }
 
 export default function PincodeChecker({ deliverablePincodes }: PincodeCheckerProps) {
