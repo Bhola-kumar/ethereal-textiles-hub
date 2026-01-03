@@ -16,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useFormPersistence, createFormKey } from '@/hooks/useFormPersistence';
 
 interface Category {
   id: string;
@@ -25,6 +26,18 @@ interface Category {
   image_url: string | null;
   created_at: string;
 }
+
+interface CategoryFormData {
+  name: string;
+  description: string;
+  image_url: string;
+}
+
+const initialFormData: CategoryFormData = {
+  name: '',
+  description: '',
+  image_url: '',
+};
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -36,11 +49,11 @@ export default function AdminCategories() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    image_url: '',
-  });
+  // Form persistence
+  const { formData, setFormData, clearPersistedData } = useFormPersistence<CategoryFormData>(
+    createFormKey('admin_category', editingCategory?.id),
+    initialFormData
+  );
 
   const guidelines = IMAGE_GUIDELINES.category;
 
@@ -69,7 +82,8 @@ export default function AdminCategories() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', image_url: '' });
+    setFormData(initialFormData);
+    clearPersistedData();
     setEditingCategory(null);
   };
 
