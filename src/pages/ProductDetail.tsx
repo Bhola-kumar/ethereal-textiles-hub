@@ -33,16 +33,25 @@ const ProductDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-20 lg:pt-24">
-          <div className="container mx-auto px-4 py-8">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
-              <Skeleton className="aspect-square rounded-2xl" />
-              <div className="space-y-6">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-12 w-3/4" />
+        <main className="pt-16 lg:pt-20">
+          <div className="container mx-auto px-4 py-4 lg:py-6">
+            <div className="grid lg:grid-cols-[45%_55%] gap-4 lg:gap-8">
+              {/* Skeleton matching actual image size */}
+              <div className="space-y-3">
+                <Skeleton className="aspect-[4/5] lg:aspect-square max-h-[400px] lg:max-h-[450px] rounded-xl mx-auto w-full" />
+                <div className="flex gap-2 justify-center">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="w-14 h-14 lg:w-16 lg:h-16 rounded-lg" />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-32 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-7 w-3/4" />
                 <Skeleton className="h-8 w-40" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
             </div>
           </div>
@@ -467,7 +476,7 @@ const ProductDetail = () => {
 
               {/* Pincode Availability Check */}
               <div className="pt-4">
-                <PincodeChecker deliverablePincodes={product.deliverable_pincodes} />
+                <PincodeChecker />
               </div>
 
               {/* Seller Payment Info */}

@@ -78,7 +78,7 @@ const ProductCarousel = ({
 
         <div ref={scrollRef} className="netflix-carousel">
           {products.map((product, index) => (
-            <div key={product.id} className="w-[160px] lg:w-[180px] h-full">
+            <div key={product.id} className="w-[140px] lg:w-[160px] h-full">
               <ProductCard product={product} index={index} />
             </div>
           ))}
