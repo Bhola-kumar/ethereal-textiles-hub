@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Trash2, Plus, Minus, X } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, X, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/store/cartStore';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { usePincodeStore, getEstimatedDelivery } from '@/store/pincodeStore';
+import PincodeInput from '@/components/common/PincodeInput';
 
 interface CartDropdownProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface CartDropdownProps {
 const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
   const navigate = useNavigate();
   const { items, removeFromCart, updateQuantity, getCartTotal, getCartCount } = useCartStore();
+  const { pincode } = usePincodeStore();
 
   const cartCount = getCartCount();
   const cartTotal = getCartTotal();
@@ -54,9 +57,12 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                 <ShoppingBag className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold">Your Cart ({cartCount})</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <PincodeInput compact />
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {items.length === 0 ? (
@@ -72,70 +78,90 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                 {/* Cart Items */}
                 <ScrollArea className="max-h-64">
                   <div className="p-2 space-y-2">
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        {/* Image */}
-                        <Link
-                          to={`/product/${item.slug || item.id}`}
-                          onClick={onClose}
-                          className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0"
+                    {items.map((item) => {
+                      const delivery = getEstimatedDelivery(item.deliverable_pincodes, pincode);
+                      
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                         >
-                          <img
-                            src={item.images?.[0] || '/placeholder.svg'}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </Link>
-
-                        {/* Details */}
-                        <div className="flex-1 min-w-0">
+                          {/* Image */}
                           <Link
                             to={`/product/${item.slug || item.id}`}
                             onClick={onClose}
-                            className="text-xs font-medium line-clamp-1 hover:text-primary transition-colors"
+                            className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0"
                           >
-                            {item.name}
+                            <img
+                              src={item.images?.[0] || '/placeholder.svg'}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
                           </Link>
-                          <p className="text-xs text-primary font-semibold">
-                            ₹{item.price.toLocaleString()}
-                          </p>
 
-                          {/* Quantity Controls */}
-                          <div className="flex items-center gap-1 mt-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                          {/* Details */}
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              to={`/product/${item.slug || item.id}`}
+                              onClick={onClose}
+                              className="text-xs font-medium line-clamp-1 hover:text-primary transition-colors"
                             >
-                              <Minus className="h-2.5 w-2.5" />
-                            </Button>
-                            <span className="text-xs font-medium w-5 text-center">{item.quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-5 w-5"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            >
-                              <Plus className="h-2.5 w-2.5" />
-                            </Button>
+                              {item.name}
+                            </Link>
+                            <p className="text-xs text-primary font-semibold">
+                              ₹{item.price.toLocaleString()}
+                            </p>
+
+                            {/* Delivery Estimate */}
+                            {pincode && (
+                              <div className="mt-0.5">
+                                {delivery.isDeliverable ? (
+                                  <span className="text-[9px] text-green-600 flex items-center gap-0.5">
+                                    <Truck className="h-2 w-2" />
+                                    By {delivery.estimatedDate}
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-destructive">
+                                    Not deliverable
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-1 mt-1">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-5 w-5"
+                                onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                              >
+                                <Minus className="h-2.5 w-2.5" />
+                              </Button>
+                              <span className="text-xs font-medium w-5 text-center">{item.quantity}</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-5 w-5"
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              >
+                                <Plus className="h-2.5 w-2.5" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Remove Button */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
+                          {/* Remove Button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
+                            onClick={() => removeFromCart(item.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
 

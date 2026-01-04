@@ -14,6 +14,7 @@ import {
   getReviewsCount
 } from '@/store/cartStore';
 import { toast } from 'sonner';
+import DeliveryEstimate from '@/components/common/DeliveryEstimate';
 
 interface ProductCardProps {
   product: Product;
@@ -217,7 +218,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             </p>
 
             {/* Price - Fixed height at bottom */}
-            <div className="flex items-center gap-1.5 mt-auto h-[20px]">
+            <div className="flex items-center gap-1.5 h-[20px]">
               <span className="text-sm font-bold text-primary">
                 ₹{product.price.toLocaleString()}
               </span>
@@ -226,6 +227,14 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                   ₹{originalPrice.toLocaleString()}
                 </span>
               )}
+            </div>
+
+            {/* Delivery Estimate */}
+            <div className="mt-auto pt-1">
+              <DeliveryEstimate 
+                deliverablePincodes={product.deliverable_pincodes} 
+                compact 
+              />
             </div>
           </div>
         </div>

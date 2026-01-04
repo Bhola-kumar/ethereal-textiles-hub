@@ -32,6 +32,7 @@ export interface Product {
   shop_slug?: string;
   shop_logo_url?: string | null;
   shop_is_verified?: boolean;
+  deliverable_pincodes?: string[] | null;
 }
 
 export interface CartItem extends Product {
