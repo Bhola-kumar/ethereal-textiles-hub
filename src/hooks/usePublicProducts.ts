@@ -133,17 +133,30 @@ export function usePublicProducts(filters?: {
   });
 }
 
-// Fetch a single public product by slug
-export function usePublicProduct(slug: string) {
+// Fetch a single public product by slug or id
+export function usePublicProduct(slugOrId: string) {
   return useQuery({
-    queryKey: ['public-product', slug],
+    queryKey: ['public-product', slugOrId],
     queryFn: async () => {
-      const { data: product, error } = await supabase
+      // Try to find by slug first
+      let { data: product, error } = await supabase
         .from('products_with_shop')
         .select('*')
-        .eq('slug', slug)
+        .eq('slug', slugOrId)
         .eq('is_published', true)
-        .single();
+        .maybeSingle();
+
+      // If not found by slug, try by ID
+      if (!product && !error) {
+        const result = await supabase
+          .from('products_with_shop')
+          .select('*')
+          .eq('id', slugOrId)
+          .eq('is_published', true)
+          .maybeSingle();
+        product = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
       if (!product?.shop_id) throw new Error('Product not found or shop is not active');
@@ -204,7 +217,7 @@ export function usePublicProduct(slug: string) {
         shop_payment_instructions?: string | null;
       };
     },
-    enabled: !!slug,
+    enabled: !!slugOrId,
   });
 }
 
