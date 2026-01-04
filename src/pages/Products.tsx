@@ -86,7 +86,7 @@ const Products = () => {
   const { data: products = [], isLoading } = usePublicProducts();
   const { data: categories = [] } = useCategories();
 
-  // Sync with URL params on mount
+  // Sync with URL params on mount and when URL changes
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
@@ -98,9 +98,8 @@ const Products = () => {
       setSelectedCategories([]);
     }
 
-    if (searchParam) {
-      setSearchQuery(searchParam);
-    }
+    // Always sync search query with URL param
+    setSearchQuery(searchParam || '');
   }, [searchParams]);
 
   const toggleFilter = (list: string[], item: string, setter: (items: string[]) => void) => {

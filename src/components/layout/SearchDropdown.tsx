@@ -96,10 +96,12 @@ const SearchDropdown = ({ isOpen, onClose }: SearchDropdownProps) => {
     setRecentSearches(updated);
     localStorage.setItem('recentSearches', JSON.stringify(updated));
 
-    // Navigate to products page with search query
-    navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+    // Close first, then navigate to avoid refresh
     onClose();
     setQuery('');
+    
+    // Use replace: false to ensure proper navigation without page reload
+    navigate(`/products?search=${encodeURIComponent(searchQuery)}`, { replace: false });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
