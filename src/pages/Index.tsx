@@ -173,8 +173,8 @@ const Index = () => {
       label: "Products Available",
     },
     {
-      value: "100%",
-      label: "Handwoven",
+      value: platformStats?.totalShops ? `${platformStats.totalShops}+` : "0",
+      label: "Trusted Sellers",
     },
     {
       value: platformStats?.avgRating ? `${platformStats.avgRating}★` : "N/A",
@@ -478,30 +478,34 @@ const Index = () => {
 
       {/* Featured Products */}
       {isSectionVisible("featured_products") && (
-        <section className="py-8 lg:py-12 bg-secondary/50">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-8"
-            >
-              <h2 className="text-xl lg:text-2xl font-display font-bold mb-2">
-                Featured <span className="gradient-text">Products</span>
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-lg mx-auto">Hand-picked favorites from our collection.</p>
-            </motion.div>
+        <section className="py-6 lg:py-10 bg-secondary/50">
+          <div className="container mx-auto px-3">
+            <div className="flex items-center justify-between mb-4">
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                <h2 className="text-lg lg:text-2xl font-display font-bold">
+                  ⭐ Featured <span className="gradient-text">Products</span>
+                </h2>
+              </motion.div>
+              <Link to="/products">
+                <Button variant="ghost" size="sm" className="group text-xs">
+                  View All
+                  <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
 
             {featuredLoading || productsLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
+              <div className="flex gap-2 overflow-hidden">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+                  <div key={i} className="w-[140px] lg:w-[160px] flex-shrink-0">
+                    <Skeleton className="aspect-[3/4] rounded-lg" />
+                  </div>
                 ))}
               </div>
             ) : displayFeaturedProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4 auto-rows-fr">
+              <div className="netflix-carousel">
                 {displayFeaturedProducts.map((product, index) => (
-                  <div key={product.id} className="h-full">
+                  <div key={product.id} className="w-[140px] lg:w-[160px] h-full">
                     <ProductCard product={product} index={index} />
                   </div>
                 ))}
@@ -512,15 +516,6 @@ const Index = () => {
                 <p className="text-xs">Products from active seller shops will appear here.</p>
               </div>
             )}
-
-            <div className="text-center mt-8">
-              <Link to="/products">
-                <Button variant="hero-outline" size="default">
-                  View All Products
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
           </div>
         </section>
       )}
