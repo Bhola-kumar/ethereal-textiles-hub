@@ -132,15 +132,15 @@ export default function ShopPage() {
           </h2>
 
           {productsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
+            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="aspect-[3/4] rounded-lg" />
+                <Skeleton key={i} className="w-[140px] lg:w-[160px] aspect-[3/4] rounded-lg flex-shrink-0" />
               ))}
             </div>
           ) : products.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3 auto-rows-fr">
+            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
               {products.map((product, index) => (
-                <div key={product.id} className="h-full max-w-[160px] mx-auto w-full">
+                <div key={product.id} className="w-[140px] lg:w-[160px] flex-shrink-0">
                   <ProductCard product={product} index={index} />
                 </div>
               ))}

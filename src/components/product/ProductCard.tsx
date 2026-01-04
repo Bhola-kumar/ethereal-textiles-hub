@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Eye, Store, CheckCircle } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Eye, Store, CheckCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   useCartStore,
@@ -22,6 +22,7 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
   const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, isInCart } = useCartStore();
 
   const inWishlist = isInWishlist(product.id);
@@ -40,6 +41,13 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     toast.success('Added to cart', {
       description: product.name,
     });
+  };
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product);
+    navigate('/checkout');
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
@@ -140,17 +148,27 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               </Button>
             </motion.div>
 
-            {/* Add to Cart Button */}
+            {/* Action Buttons */}
             <motion.div
-              className="absolute bottom-2 left-2 right-2"
+              className="absolute bottom-2 left-2 right-2 flex flex-col gap-1"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
               transition={{ duration: 0.3 }}
             >
               <Button
-                variant={inCart ? 'secondary' : 'hero'}
+                variant="hero"
                 size="sm"
-                className="w-full text-xs h-7"
+                className="w-full text-xs h-6"
+                onClick={handleBuyNow}
+                disabled={!inStock}
+              >
+                <Zap className="h-3 w-3 mr-1" />
+                Buy Now
+              </Button>
+              <Button
+                variant={inCart ? 'secondary' : 'outline'}
+                size="sm"
+                className="w-full text-xs h-6 bg-background/80 backdrop-blur-sm"
                 onClick={handleAddToCart}
                 disabled={!inStock}
               >

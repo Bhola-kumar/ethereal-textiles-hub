@@ -15,10 +15,12 @@ import { useCartStore } from '@/store/cartStore';
 import NotificationDropdown from './NotificationDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import SearchDropdown from './SearchDropdown';
+import CartDropdown from './CartDropdown';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut, isAdmin, isSeller } = useAuth();
   const { getCartCount, wishlist } = useCartStore();
@@ -114,23 +116,26 @@ const Header = () => {
             </Button>
 
             {/* Cart */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/cart')}
-              className="relative h-8 w-8"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              {cartCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
-                >
-                  {cartCount}
-                </motion.span>
-              )}
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsCartOpen(!isCartOpen)}
+                className="relative h-8 w-8"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                {cartCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
+                  >
+                    {cartCount}
+                  </motion.span>
+                )}
+              </Button>
+              <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+            </div>
 
             {/* Notifications */}
             {user && <NotificationDropdown />}
