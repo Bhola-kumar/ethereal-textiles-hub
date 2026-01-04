@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, Star, Truck, Shield, RefreshCw, Minus, Plus, ChevronLeft, ChevronRight, Store, BadgeCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePublicProduct, usePublicProducts } from '@/hooks/usePublicProducts';
-import { useCartStore } from '@/store/cartStore';
+import { useAddToCart } from '@/hooks/useCart';
+import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from '@/hooks/useWishlist';
+import { useAuth } from '@/hooks/useAuth';
 import ProductCard from '@/components/product/ProductCard';
 import ProductReviews from '@/components/product/ProductReviews';
 import Header from '@/components/layout/Header';
@@ -16,6 +18,8 @@ import PincodeChecker from '@/components/product/PincodeChecker';
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: product, isLoading, error } = usePublicProduct(id || '');
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -23,7 +27,10 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, isInCart } = useCartStore();
+  const { data: wishlist = [] } = useWishlist();
+  const addToCart = useAddToCart();
+  const addToWishlist = useAddToWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
 
   // Fetch related products (same category)
   const { data: allProducts = [] } = usePublicProducts({ category: product?.category_id || undefined });
@@ -79,74 +86,28 @@ const ProductDetail = () => {
     );
   }
 
-  const inWishlist = isInWishlist(product.id);
-  const inCart = isInCart(product.id);
+  const inWishlist = wishlist.some(item => item.product_id === product.id);
   const productImages = product.images?.length ? product.images : ['https://images.pexels.com/photos/6044266/pexels-photo-6044266.jpeg?auto=compress&cs=tinysrgb&w=800'];
 
   const handleAddToCart = () => {
-    const cartProduct = {
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      originalPrice: product.original_price || undefined,
-      image: productImages[0],
-      images: product.images || undefined,
-      category: product.categories?.name || 'Uncategorized',
-      fabric: product.fabric || undefined,
-      color: product.color || undefined,
-      pattern: product.pattern || undefined,
-      description: product.description || '',
-      rating: product.rating || 0,
-      reviews: product.reviews_count || 0,
-      isNew: product.is_new || false,
-      isTrending: product.is_trending || false,
-      inStock: (product.stock || 0) > 0,
-      care: product.care_instructions || [],
-      seller_id: product.seller_id || undefined,
-      shop_name: product.shop_name || undefined,
-      shop_slug: product.shop_slug || undefined,
-      shop_is_verified: product.shop_is_verified || undefined,
-    };
-
-    for (let i = 0; i < quantity; i++) {
-      addToCart(cartProduct);
+    if (!user) {
+      toast.error('Please sign in to add items to cart');
+      navigate('/auth');
+      return;
     }
-    toast.success(`Added ${quantity} item(s) to cart`, {
-      description: product.name,
-    });
+    addToCart.mutate({ productId: product.id, quantity });
   };
 
   const handleWishlistToggle = () => {
-    const wishlistProduct = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      originalPrice: product.original_price || undefined,
-      image: productImages[0],
-      category: product.categories?.name || 'Uncategorized',
-      fabric: product.fabric || undefined,
-      color: product.color || undefined,
-      pattern: product.pattern || undefined,
-      description: product.description || '',
-      rating: product.rating || 0,
-      reviews: product.reviews_count || 0,
-      isNew: product.is_new || false,
-      isTrending: product.is_trending || false,
-      inStock: (product.stock || 0) > 0,
-      care: product.care_instructions || [],
-      seller_id: product.seller_id || undefined,
-      shop_name: product.shop_name || undefined,
-      shop_slug: product.shop_slug || undefined,
-      shop_is_verified: product.shop_is_verified || undefined,
-    };
-
+    if (!user) {
+      toast.error('Please sign in to add items to wishlist');
+      navigate('/auth');
+      return;
+    }
     if (inWishlist) {
-      removeFromWishlist(product.id);
-      toast.info('Removed from wishlist');
+      removeFromWishlist.mutate(product.id);
     } else {
-      addToWishlist(wishlistProduct);
-      toast.success('Added to wishlist');
+      addToWishlist.mutate(product.id);
     }
   };
 
@@ -460,10 +421,10 @@ const ProductDetail = () => {
                   size="lg"
                   className="flex-1"
                   onClick={handleAddToCart}
-                  disabled={!inStock}
+                  disabled={!inStock || addToCart.isPending}
                 >
                   <ShoppingBag className="h-4 w-4" />
-                  {inCart ? 'Add More' : 'Add to Cart'}
+                  Add to Cart
                 </Button>
                 <Button
                   variant="hero-outline"

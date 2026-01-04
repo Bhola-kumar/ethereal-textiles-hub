@@ -1,5 +1,5 @@
-import { Truck, MapPin, AlertCircle } from 'lucide-react';
-import { usePincodeStore, getEstimatedDelivery } from '@/store/pincodeStore';
+import { Truck, AlertCircle } from 'lucide-react';
+import { usePincode, getEstimatedDelivery } from '@/hooks/usePincode';
 import { cn } from '@/lib/utils';
 
 interface DeliveryEstimateProps {
@@ -13,7 +13,7 @@ export default function DeliveryEstimate({
   compact = false,
   className 
 }: DeliveryEstimateProps) {
-  const { pincode } = usePincodeStore();
+  const { data: pincode } = usePincode();
   
   if (!pincode) {
     return null;

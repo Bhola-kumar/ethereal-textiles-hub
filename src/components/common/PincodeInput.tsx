@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { MapPin, Check, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { usePincodeStore } from '@/store/pincodeStore';
+import { usePincode, useUpdatePincode } from '@/hooks/usePincode';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import {
   Popover,
@@ -15,25 +16,54 @@ interface PincodeInputProps {
 }
 
 export default function PincodeInput({ compact = false }: PincodeInputProps) {
-  const { pincode, setPincode, clearPincode } = usePincodeStore();
-  const [inputValue, setInputValue] = useState(pincode || '');
+  const { user } = useAuth();
+  const { data: pincode, isLoading } = usePincode();
+  const updatePincode = useUpdatePincode();
+  const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
+  useEffect(() => {
+    if (pincode) {
+      setInputValue(pincode);
+    }
+  }, [pincode]);
+
   const handleSave = () => {
+    if (!user) {
+      toast.error('Please sign in to save your delivery location');
+      return;
+    }
+
     if (!inputValue || inputValue.length !== 6 || !/^\d+$/.test(inputValue)) {
       toast.error('Please enter a valid 6-digit pincode');
       return;
     }
-    setPincode(inputValue);
-    setIsOpen(false);
-    toast.success(`Delivery location set to ${inputValue}`);
+
+    updatePincode.mutate(inputValue, {
+      onSuccess: () => {
+        setIsOpen(false);
+        toast.success(`Delivery location set to ${inputValue}`);
+      },
+      onError: () => {
+        toast.error('Failed to save pincode');
+      },
+    });
   };
 
   const handleClear = () => {
-    clearPincode();
-    setInputValue('');
-    setIsOpen(false);
+    if (!user) return;
+    
+    updatePincode.mutate(null, {
+      onSuccess: () => {
+        setInputValue('');
+        setIsOpen(false);
+      },
+    });
   };
+
+  if (!user) {
+    return null;
+  }
 
   if (compact) {
     return (
@@ -41,7 +71,7 @@ export default function PincodeInput({ compact = false }: PincodeInputProps) {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
             <MapPin className="h-3 w-3" />
-            {pincode ? pincode : 'Set Location'}
+            {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : pincode ? pincode : 'Set Location'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-3" align="end">
@@ -56,14 +86,32 @@ export default function PincodeInput({ compact = false }: PincodeInputProps) {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ''))}
               className="h-8 text-sm"
+              disabled={updatePincode.isPending}
             />
             <div className="flex gap-2">
-              <Button size="sm" className="flex-1 h-7 text-xs" onClick={handleSave}>
-                <Check className="h-3 w-3 mr-1" />
-                Save
+              <Button 
+                size="sm" 
+                className="flex-1 h-7 text-xs" 
+                onClick={handleSave}
+                disabled={updatePincode.isPending}
+              >
+                {updatePincode.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Save
+                  </>
+                )}
               </Button>
               {pincode && (
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleClear}>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-7 text-xs" 
+                  onClick={handleClear}
+                  disabled={updatePincode.isPending}
+                >
                   <X className="h-3 w-3" />
                 </Button>
               )}
@@ -83,9 +131,16 @@ export default function PincodeInput({ compact = false }: PincodeInputProps) {
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value.replace(/\D/g, ''))}
         className="w-24 h-8 text-sm"
+        disabled={updatePincode.isPending || isLoading}
       />
-      <Button size="sm" variant="secondary" className="h-8" onClick={handleSave}>
-        Check
+      <Button 
+        size="sm" 
+        variant="secondary" 
+        className="h-8" 
+        onClick={handleSave}
+        disabled={updatePincode.isPending}
+      >
+        {updatePincode.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Check'}
       </Button>
     </div>
   );
