@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/store/cartStore';
 import NotificationDropdown from './NotificationDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import SearchDropdown from './SearchDropdown';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -221,26 +222,8 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <AnimatePresence>
-          {isSearchOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden pb-4"
-            >
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search for gamchhas, fabrics, patterns..."
-                  className="w-full h-12 pl-12 pr-4 bg-secondary/50 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Search Dropdown */}
+        <SearchDropdown isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </div>
 
       {/* Mobile Menu */}
