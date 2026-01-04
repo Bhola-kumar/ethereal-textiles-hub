@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
-import { useCartStore, getProductImage } from '@/store/cartStore';
+import { useCart, useClearCart, CartItem } from '@/hooks/useCart';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,11 @@ import PaymentConfirmation from '@/components/checkout/PaymentConfirmation';
 import { Tables } from '@/integrations/supabase/types';
 
 type Address = Tables<'addresses'>;
+
+// Helper to get product image
+const getProductImage = (item: CartItem): string => {
+  return item.products.images?.[0] || '/placeholder.svg';
+};
 
 interface SellerPaymentInfo {
   seller_id: string;
@@ -72,7 +77,8 @@ const addressSchema = z.object({
 export default function Checkout() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { items: cartItems, clearCart, getCartTotal } = useCartStore();
+  const { data: cartItems = [] } = useCart();
+  const clearCart = useClearCart();
 
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -132,12 +138,12 @@ export default function Checkout() {
   const fetchSellerPaymentInfo = async () => {
     if (!cartItems || cartItems.length === 0) return;
 
-    // First try to get seller_ids from cart items
-    let sellerIds = [...new Set(cartItems.map(item => item.seller_id).filter(Boolean))] as string[];
+    // First try to get seller_ids from cart items (via products)
+    let sellerIds = [...new Set(cartItems.map(item => item.products.seller_id).filter(Boolean))] as string[];
 
     // If no seller IDs in cart items, fetch from products table using product IDs
     if (sellerIds.length === 0) {
-      const productIds = cartItems.map(item => item.id);
+      const productIds = cartItems.map(item => item.product_id);
       const { data: productData } = await supabase
         .from('products')
         .select('seller_id')
@@ -225,10 +231,10 @@ export default function Checkout() {
         // Calculate totals per seller with charges
         const totalsMap = new Map<string, number>();
         cartItems.forEach(item => {
-          const sellerId = item.seller_id;
+          const sellerId = item.products.seller_id;
           if (sellerId) {
             const current = totalsMap.get(sellerId) || 0;
-            totalsMap.set(sellerId, current + (item.price * item.quantity));
+            totalsMap.set(sellerId, current + (item.products.price * item.quantity));
           }
         });
 
@@ -351,9 +357,9 @@ export default function Checkout() {
     setIsSubmitting(true);
     try {
       // Server-side price validation - calculate totals from database
-      const productIds = cartItems.map(item => item.id);
+      const productIds = cartItems.map(item => item.product_id);
       const quantities = cartItems.map(item => item.quantity);
-      const sellerIds = cartItems.map(item => item.seller_id).filter(Boolean);
+      const sellerIds = cartItems.map(item => item.products.seller_id).filter(Boolean);
 
       const { data: verifiedTotals, error: validationError } = await supabase
         .rpc('calculate_order_total', {
@@ -423,7 +429,7 @@ export default function Checkout() {
         order_id: order.id,
         product_id: item.product_id,
         product_name: item.product_name,
-        product_image: getProductImage(cartItems.find(c => c.id === item.product_id) || cartItems[0]),
+        product_image: getProductImage(cartItems.find(c => c.product_id === item.product_id) || cartItems[0]),
         quantity: item.quantity,
         price: item.price,
       }));
@@ -437,7 +443,7 @@ export default function Checkout() {
       // Seller notifications are handled automatically by database trigger (notify_seller_new_order)
 
       // Clear cart
-      clearCart();
+      clearCart.mutate();
 
       setOrderNumber(order.order_number);
       setOrderComplete(true);
@@ -454,7 +460,7 @@ export default function Checkout() {
   };
 
   // Calculate totals including seller charges
-  const subtotal = getCartTotal();
+  const subtotal = cartItems.reduce((total, item) => total + (item.products.price * item.quantity), 0);
   const totalShipping = sellerCartTotals.reduce((sum, s) => sum + s.shipping_charge, 0);
   const totalGst = sellerCartTotals.reduce((sum, s) => sum + s.gst_amount, 0);
   const totalConvenience = sellerCartTotals.reduce((sum, s) => sum + s.convenience_charge, 0);
@@ -788,14 +794,14 @@ export default function Checkout() {
                             <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                               <img
                                 src={getProductImage(item)}
-                                alt={item.name}
+                                alt={item.products.name}
                                 className="w-12 h-12 rounded object-cover"
                               />
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{item.name}</p>
+                                <p className="font-medium text-sm">{item.products.name}</p>
                                 <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                               </div>
-                              <p className="font-medium">₹{(item.price * item.quantity).toLocaleString()}</p>
+                              <p className="font-medium">₹{(item.products.price * item.quantity).toLocaleString()}</p>
                             </div>
                           ))}
                         </div>
@@ -880,13 +886,13 @@ export default function Checkout() {
                     <div key={item.id} className="flex gap-3">
                       <img
                         src={getProductImage(item)}
-                        alt={item.name}
+                        alt={item.products.name}
                         className="w-16 h-16 rounded object-cover"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-clamp-1">{item.name}</p>
+                        <p className="text-sm font-medium line-clamp-1">{item.products.name}</p>
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                        <p className="text-sm font-medium">₹{(item.price * item.quantity).toLocaleString()}</p>
+                        <p className="text-sm font-medium">₹{(item.products.price * item.quantity).toLocaleString()}</p>
                       </div>
                     </div>
                   ))}

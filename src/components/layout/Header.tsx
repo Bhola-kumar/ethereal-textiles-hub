@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useCartStore } from '@/store/cartStore';
+import { useCart } from '@/hooks/useCart';
+import { useWishlist } from '@/hooks/useWishlist';
 import NotificationDropdown from './NotificationDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import SearchDropdown from './SearchDropdown';
@@ -23,9 +24,10 @@ const Header = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut, isAdmin, isSeller } = useAuth();
-  const { getCartCount, wishlist } = useCartStore();
+  const { data: cartItems = [] } = useCart();
+  const { data: wishlist = [] } = useWishlist();
 
-  const cartCount = getCartCount();
+  const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
   const wishlistCount = wishlist.length;
 
   const navLinks = [

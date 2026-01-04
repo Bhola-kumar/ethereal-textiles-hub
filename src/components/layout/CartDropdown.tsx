@@ -1,11 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Trash2, Plus, Minus, X, Truck } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, X, Truck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCartStore } from '@/store/cartStore';
+import { useCart, useUpdateCartQuantity, useRemoveFromCart } from '@/hooks/useCart';
+import { usePincode, getEstimatedDelivery } from '@/hooks/usePincode';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { usePincodeStore, getEstimatedDelivery } from '@/store/pincodeStore';
 import PincodeInput from '@/components/common/PincodeInput';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CartDropdownProps {
   isOpen: boolean;
@@ -14,11 +15,14 @@ interface CartDropdownProps {
 
 const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
   const navigate = useNavigate();
-  const { items, removeFromCart, updateQuantity, getCartTotal, getCartCount } = useCartStore();
-  const { pincode } = usePincodeStore();
+  const { user } = useAuth();
+  const { data: items = [], isLoading } = useCart();
+  const { data: pincode } = usePincode();
+  const updateQuantity = useUpdateCartQuantity();
+  const removeFromCart = useRemoveFromCart();
 
-  const cartCount = getCartCount();
-  const cartTotal = getCartTotal();
+  const cartCount = items.reduce((count, item) => count + item.quantity, 0);
+  const cartTotal = items.reduce((total, item) => total + (item.products.price * item.quantity), 0);
 
   const handleCheckout = () => {
     onClose();
@@ -65,7 +69,19 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
               </div>
             </div>
 
-            {items.length === 0 ? (
+            {!user ? (
+              <div className="p-6 text-center">
+                <ShoppingBag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground mb-3">Sign in to view your cart</p>
+                <Button variant="outline" size="sm" onClick={() => { onClose(); navigate('/auth'); }}>
+                  Sign In
+                </Button>
+              </div>
+            ) : isLoading ? (
+              <div className="p-6 text-center">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              </div>
+            ) : items.length === 0 ? (
               <div className="p-6 text-center">
                 <ShoppingBag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground mb-3">Your cart is empty</p>
@@ -79,7 +95,7 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                 <ScrollArea className="max-h-64">
                   <div className="p-2 space-y-2">
                     {items.map((item) => {
-                      const delivery = getEstimatedDelivery(item.deliverable_pincodes, pincode);
+                      const delivery = getEstimatedDelivery(item.products.deliverable_pincodes, pincode);
                       
                       return (
                         <div
@@ -88,13 +104,13 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                         >
                           {/* Image */}
                           <Link
-                            to={`/product/${item.slug || item.id}`}
+                            to={`/product/${item.products.slug || item.products.id}`}
                             onClick={onClose}
                             className="w-14 h-14 rounded-md overflow-hidden flex-shrink-0"
                           >
                             <img
-                              src={item.images?.[0] || '/placeholder.svg'}
-                              alt={item.name}
+                              src={item.products.images?.[0] || '/placeholder.svg'}
+                              alt={item.products.name}
                               className="w-full h-full object-cover"
                             />
                           </Link>
@@ -102,14 +118,14 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                           {/* Details */}
                           <div className="flex-1 min-w-0">
                             <Link
-                              to={`/product/${item.slug || item.id}`}
+                              to={`/product/${item.products.slug || item.products.id}`}
                               onClick={onClose}
                               className="text-xs font-medium line-clamp-1 hover:text-primary transition-colors"
                             >
-                              {item.name}
+                              {item.products.name}
                             </Link>
                             <p className="text-xs text-primary font-semibold">
-                              ₹{item.price.toLocaleString()}
+                              ₹{item.products.price.toLocaleString()}
                             </p>
 
                             {/* Delivery Estimate */}
@@ -134,7 +150,8 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                                 variant="outline"
                                 size="icon"
                                 className="h-5 w-5"
-                                onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                                onClick={() => updateQuantity.mutate({ itemId: item.id, quantity: Math.max(0, item.quantity - 1) })}
+                                disabled={updateQuantity.isPending}
                               >
                                 <Minus className="h-2.5 w-2.5" />
                               </Button>
@@ -143,7 +160,8 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                                 variant="outline"
                                 size="icon"
                                 className="h-5 w-5"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateQuantity.mutate({ itemId: item.id, quantity: item.quantity + 1 })}
+                                disabled={updateQuantity.isPending}
                               >
                                 <Plus className="h-2.5 w-2.5" />
                               </Button>
@@ -155,7 +173,8 @@ const CartDropdown = ({ isOpen, onClose }: CartDropdownProps) => {
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 text-destructive hover:text-destructive flex-shrink-0"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart.mutate(item.id)}
+                            disabled={removeFromCart.isPending}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

@@ -1,4 +1,23 @@
-import { Product } from '@/store/cartStore';
+// Static product data for reference/demo purposes
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  image?: string;
+  images?: string[];
+  category?: string;
+  fabric?: string;
+  color?: string;
+  pattern?: string;
+  rating?: number;
+  reviews?: number;
+  description?: string;
+  care?: string[];
+  inStock?: boolean;
+  isNew?: boolean;
+  isTrending?: boolean;
+}
 
 export const products: Product[] = [
   {
@@ -38,167 +57,6 @@ export const products: Product[] = [
     care: ['Hand wash recommended', 'Dry in shade', 'Do not bleach', 'Iron on low heat'],
     inStock: true,
     isNew: true,
-  },
-  {
-    id: '3',
-    name: 'Assamese Gamosa with Motifs',
-    price: 549,
-    originalPrice: 749,
-    image: 'https://images.pexels.com/photos/4210343/pexels-photo-4210343.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Traditional',
-    fabric: 'Cotton-Silk Blend',
-    color: 'Red & Golden',
-    pattern: 'Bordered',
-    rating: 4.7,
-    reviews: 234,
-    description: 'The traditional Assamese Gamosa (Bihuwaan) featuring intricate red borders with golden motifs. A symbol of Assamese culture, it is offered as a mark of respect and used during Bihu festivals.',
-    care: ['Dry clean only', 'Store in cool place', 'Avoid direct sunlight'],
-    inStock: true,
-    isTrending: true,
-  },
-  {
-    id: '4',
-    name: 'Organic Cotton Bath Towel',
-    price: 449,
-    image: 'https://images.pexels.com/photos/5591664/pexels-photo-5591664.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Everyday',
-    fabric: 'Organic Cotton',
-    color: 'Natural White',
-    pattern: 'Plain',
-    rating: 4.6,
-    reviews: 412,
-    description: 'Made from 100% GOTS certified organic cotton, this bath towel is free from harmful chemicals. Super absorbent and gentle on skin, perfect for everyday use.',
-    care: ['Machine wash warm', 'Tumble dry', 'Iron if needed'],
-    inStock: true,
-  },
-  {
-    id: '5',
-    name: 'Bhagalpuri Silk-Cotton Chadar',
-    price: 899,
-    originalPrice: 1299,
-    image: 'https://images.pexels.com/photos/6044827/pexels-photo-6044827.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Luxury',
-    fabric: 'Silk-Cotton Blend',
-    color: 'Cream & Maroon',
-    pattern: 'Traditional Weave',
-    rating: 4.8,
-    reviews: 178,
-    description: 'A luxurious Bhagalpuri chadar blending the softness of cotton with the sheen of silk. Features traditional border patterns and is perfect for special occasions or gifting.',
-    care: ['Dry clean recommended', 'Store folded', 'Steam iron on low'],
-    inStock: true,
-    isNew: true,
-  },
-  {
-    id: '6',
-    name: 'Khadi Cotton Gamchha',
-    price: 349,
-    image: 'https://images.pexels.com/photos/4210866/pexels-photo-4210866.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Traditional',
-    fabric: 'Khadi Cotton',
-    color: 'Off-White',
-    pattern: 'Handspun Texture',
-    rating: 4.7,
-    reviews: 289,
-    description: 'Hand-spun and hand-woven Khadi gamchha, a symbol of Indian independence movement. Features the unique texture of khadi that regulates body temperature naturally.',
-    care: ['Hand wash cold', 'Line dry', 'Iron while damp'],
-    inStock: true,
-    isTrending: true,
-  },
-  {
-    id: '7',
-    name: 'Santipuri Cotton Gamchha Set',
-    price: 599,
-    originalPrice: 799,
-    image: 'https://images.pexels.com/photos/3771823/pexels-photo-3771823.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Premium',
-    fabric: 'Fine Cotton',
-    color: 'Multi-Color Pack',
-    pattern: 'Assorted Checks',
-    rating: 4.6,
-    reviews: 456,
-    description: 'A set of 3 gamchhas from Santipur, known for its fine cotton weaving. Includes red, green, and blue check patterns - perfect for daily use.',
-    care: ['Machine wash cold', 'Tumble dry low', 'Colors may bleed initially'],
-    inStock: true,
-  },
-  {
-    id: '8',
-    name: 'Pochampally Ikat Towel',
-    price: 749,
-    originalPrice: 999,
-    image: 'https://images.pexels.com/photos/4792078/pexels-photo-4792078.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Luxury',
-    fabric: 'Ikat Cotton',
-    color: 'Indigo & White',
-    pattern: 'Geometric Ikat',
-    rating: 4.9,
-    reviews: 145,
-    description: 'Featuring the famous Pochampally double-ikat weave from Telangana. Each piece takes weeks to create with the resist-dyeing technique creating stunning geometric patterns.',
-    care: ['Hand wash separately', 'Dry in shade', 'Do not bleach'],
-    inStock: true,
-    isNew: true,
-  },
-  {
-    id: '9',
-    name: 'Bengali Wedding Gamchha',
-    price: 499,
-    image: 'https://images.pexels.com/photos/6045065/pexels-photo-6045065.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Traditional',
-    fabric: 'Pure Cotton',
-    color: 'Red & White',
-    pattern: 'Bordered Checks',
-    rating: 4.8,
-    reviews: 678,
-    description: 'Traditional Bengali gamchha used in wedding ceremonies. Features the auspicious red and white checks with decorative borders. An essential item for Bengali marriages.',
-    care: ['Machine wash cold', 'Do not bleach', 'Iron on medium'],
-    inStock: true,
-    isTrending: true,
-  },
-  {
-    id: '10',
-    name: 'Jamdani Inspired Towel',
-    price: 1299,
-    originalPrice: 1799,
-    image: 'https://images.pexels.com/photos/4792291/pexels-photo-4792291.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Luxury',
-    fabric: 'Fine Muslin Cotton',
-    color: 'White & Silver',
-    pattern: 'Floral Jamdani',
-    rating: 4.9,
-    reviews: 89,
-    description: 'Inspired by the famous Dhakai Jamdani weaving technique, this luxurious towel features delicate floral patterns woven directly into the fabric using supplementary weft technique.',
-    care: ['Hand wash only', 'Dry flat', 'Steam iron'],
-    inStock: false,
-  },
-  {
-    id: '11',
-    name: 'Quick-Dry Sports Gamchha',
-    price: 399,
-    image: 'https://images.pexels.com/photos/4210344/pexels-photo-4210344.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Everyday',
-    fabric: 'Microfiber Cotton',
-    color: 'Navy & Orange',
-    pattern: 'Sporty Stripes',
-    rating: 4.5,
-    reviews: 234,
-    description: 'Modern take on the traditional gamchha, designed for sports and gym use. Ultra-lightweight, quick-drying, and highly absorbent. Compact enough to fit in your gym bag.',
-    care: ['Machine wash warm', 'Tumble dry medium', 'Use mild detergent'],
-    inStock: true,
-  },
-  {
-    id: '12',
-    name: 'Dhaniakhali Pure Cotton Gamchha',
-    price: 349,
-    originalPrice: 449,
-    image: 'https://images.pexels.com/photos/4210373/pexels-photo-4210373.jpeg?auto=compress&cs=tinysrgb&w=800',
-    category: 'Traditional',
-    fabric: 'Pure Cotton',
-    color: 'Green & White',
-    pattern: 'Classic Checks',
-    rating: 4.7,
-    reviews: 523,
-    description: 'From the handloom hub of Dhaniakhali in Hooghly district. Known for its extra-soft finish and durability. The green and white checks represent freshness and purity.',
-    care: ['Machine wash cold', 'Hang dry', 'Iron on medium'],
-    inStock: true,
   },
 ];
 

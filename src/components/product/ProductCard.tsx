@@ -3,18 +3,36 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, Star, Eye, Store, CheckCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  useCartStore,
-  Product,
-  getProductImage,
-  isProductInStock,
-  getOriginalPrice,
-  isProductNew,
-  isProductTrending,
-  getReviewsCount
-} from '@/store/cartStore';
+import { useAddToCart } from '@/hooks/useCart';
+import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from '@/hooks/useWishlist';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import DeliveryEstimate from '@/components/common/DeliveryEstimate';
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  original_price?: number | null;
+  images?: string[] | null;
+  category_id?: string | null;
+  fabric?: string | null;
+  color?: string | null;
+  pattern?: string | null;
+  rating?: number | null;
+  reviews_count?: number | null;
+  description?: string | null;
+  stock?: number | null;
+  is_new?: boolean | null;
+  is_trending?: boolean | null;
+  slug?: string;
+  seller_id?: string | null;
+  shop_name?: string | null;
+  shop_slug?: string | null;
+  shop_logo_url?: string | null;
+  shop_is_verified?: boolean | null;
+  deliverable_pincodes?: string[] | null;
+}
 
 interface ProductCardProps {
   product: Product;
@@ -24,44 +42,56 @@ interface ProductCardProps {
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, isInCart } = useCartStore();
+  const { user } = useAuth();
+  const { data: wishlist = [] } = useWishlist();
+  const addToCart = useAddToCart();
+  const addToWishlist = useAddToWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
 
-  const inWishlist = isInWishlist(product.id);
-  const inCart = isInCart(product.id);
-  const productImage = getProductImage(product);
-  const inStock = isProductInStock(product);
-  const originalPrice = getOriginalPrice(product);
-  const isNew = isProductNew(product);
-  const isTrending = isProductTrending(product);
-  const reviewsCount = getReviewsCount(product);
+  const inWishlist = wishlist.some(item => item.product_id === product.id);
+  const productImage = product.images?.[0] || '/placeholder.svg';
+  const inStock = (product.stock || 0) > 0;
+  const originalPrice = product.original_price;
+  const isNew = product.is_new;
+  const isTrending = product.is_trending;
+  const reviewsCount = product.reviews_count || 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product);
-    toast.success('Added to cart', {
-      description: product.name,
-    });
+    if (!user) {
+      toast.error('Please sign in to add items to cart');
+      navigate('/auth');
+      return;
+    }
+    addToCart.mutate({ productId: product.id });
   };
 
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product);
-    navigate('/checkout');
+    if (!user) {
+      toast.error('Please sign in to purchase');
+      navigate('/auth');
+      return;
+    }
+    addToCart.mutate({ productId: product.id }, {
+      onSuccess: () => navigate('/checkout'),
+    });
   };
 
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) {
+      toast.error('Please sign in to add items to wishlist');
+      navigate('/auth');
+      return;
+    }
     if (inWishlist) {
-      removeFromWishlist(product.id);
-      toast.info('Removed from wishlist');
+      removeFromWishlist.mutate(product.id);
     } else {
-      addToWishlist(product);
-      toast.success('Added to wishlist', {
-        description: product.name,
-      });
+      addToWishlist.mutate(product.id);
     }
   };
 
@@ -131,6 +161,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleWishlistToggle}
+                disabled={addToWishlist.isPending || removeFromWishlist.isPending}
               >
                 <Heart
                   className={`h-3 w-3 transition-colors ${inWishlist ? 'fill-primary text-primary' : ''
@@ -161,20 +192,20 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 size="sm"
                 className="w-full text-xs h-6"
                 onClick={handleBuyNow}
-                disabled={!inStock}
+                disabled={!inStock || addToCart.isPending}
               >
                 <Zap className="h-3 w-3 mr-1" />
                 Buy Now
               </Button>
               <Button
-                variant={inCart ? 'secondary' : 'outline'}
+                variant="outline"
                 size="sm"
                 className="w-full text-xs h-6 bg-background/80 backdrop-blur-sm"
                 onClick={handleAddToCart}
-                disabled={!inStock}
+                disabled={!inStock || addToCart.isPending}
               >
                 <ShoppingBag className="h-3 w-3 mr-1" />
-                {!inStock ? 'Out of Stock' : inCart ? 'Add More' : 'Add to Cart'}
+                {!inStock ? 'Out of Stock' : 'Add to Cart'}
               </Button>
             </motion.div>
           </div>

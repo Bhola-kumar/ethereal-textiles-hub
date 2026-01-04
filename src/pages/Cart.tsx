@@ -1,26 +1,61 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, Tag, Truck, MapPin } from 'lucide-react';
+import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, Tag, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCartStore } from '@/store/cartStore';
+import { useCart, useUpdateCartQuantity, useRemoveFromCart, useClearCart } from '@/hooks/useCart';
+import { usePincode, getEstimatedDelivery } from '@/hooks/usePincode';
+import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { toast } from 'sonner';
-import { usePincodeStore, getEstimatedDelivery } from '@/store/pincodeStore';
 import PincodeInput from '@/components/common/PincodeInput';
+import { Truck } from 'lucide-react';
 
 const Cart = () => {
-  const { items, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCartStore();
-  const { pincode } = usePincodeStore();
+  const { user } = useAuth();
+  const { data: items = [], isLoading } = useCart();
+  const { data: pincode } = usePincode();
+  const updateQuantity = useUpdateCartQuantity();
+  const removeFromCart = useRemoveFromCart();
+  const clearCart = useClearCart();
 
-  const subtotal = getCartTotal();
+  const subtotal = items.reduce((total, item) => total + (item.products.price * item.quantity), 0);
   const shipping = subtotal > 999 ? 0 : 99;
   const total = subtotal + shipping;
 
-  const handleRemove = (productId: string, productName: string) => {
-    removeFromCart(productId);
-    toast.info('Removed from cart', { description: productName });
+  const handleRemove = (itemId: string, productName: string) => {
+    removeFromCart.mutate(itemId, {
+      onSuccess: () => toast.info('Removed from cart', { description: productName }),
+    });
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-20 lg:pt-24">
+          <div className="container mx-auto px-4 py-8 lg:py-12">
+            <div className="text-center py-20">
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
+                <ShoppingBag className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h2 className="text-xl font-display font-semibold mb-2">Sign in to view your cart</h2>
+              <p className="text-muted-foreground mb-6">
+                Your cart items are saved when you sign in.
+              </p>
+              <Link to="/auth">
+                <Button variant="hero" size="lg">
+                  Sign In
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,13 +71,19 @@ const Cart = () => {
               Shopping <span className="gradient-text">Cart</span>
             </h1>
             <p className="text-muted-foreground mb-8">
-              {items.length === 0
+              {isLoading
+                ? 'Loading...'
+                : items.length === 0
                 ? 'Your cart is empty'
                 : `${items.length} item${items.length > 1 ? 's' : ''} in your cart`}
             </p>
           </motion.div>
 
-          {items.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : items.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -68,7 +109,7 @@ const Cart = () => {
               <div className="lg:col-span-2 space-y-4">
                 <AnimatePresence>
                   {items.map((item, index) => {
-                    const delivery = getEstimatedDelivery(item.deliverable_pincodes, pincode);
+                    const delivery = getEstimatedDelivery(item.products.deliverable_pincodes, pincode);
                     
                     return (
                       <motion.div
@@ -81,11 +122,11 @@ const Cart = () => {
                       >
                         <div className="flex gap-4 lg:gap-6">
                           {/* Image */}
-                          <Link to={`/product/${item.slug || item.id}`} className="flex-shrink-0">
+                          <Link to={`/product/${item.products.slug || item.products.id}`} className="flex-shrink-0">
                             <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-xl overflow-hidden bg-secondary">
                               <img
-                                src={item.image}
-                                alt={item.name}
+                                src={item.products.images?.[0] || '/placeholder.svg'}
+                                alt={item.products.name}
                                 className="w-full h-full object-cover hover:scale-105 transition-transform"
                               />
                             </div>
@@ -93,13 +134,13 @@ const Cart = () => {
 
                           {/* Details */}
                           <div className="flex-1 min-w-0">
-                            <Link to={`/product/${item.slug || item.id}`}>
+                            <Link to={`/product/${item.products.slug || item.products.id}`}>
                               <h3 className="font-display font-semibold text-lg mb-1 hover:text-primary transition-colors line-clamp-1">
-                                {item.name}
+                                {item.products.name}
                               </h3>
                             </Link>
                             <p className="text-sm text-muted-foreground mb-2">
-                              {item.fabric} • {item.color}
+                              {item.products.fabric} • {item.products.color}
                             </p>
 
                             {/* Delivery Estimate */}
@@ -121,11 +162,11 @@ const Cart = () => {
                             {/* Price */}
                             <div className="flex items-center gap-2 mb-4">
                               <span className="font-bold text-primary">
-                                ₹{item.price.toLocaleString()}
+                                ₹{item.products.price.toLocaleString()}
                               </span>
-                              {item.originalPrice && (
+                              {item.products.original_price && (
                                 <span className="text-sm text-muted-foreground line-through">
-                                  ₹{item.originalPrice.toLocaleString()}
+                                  ₹{item.products.original_price.toLocaleString()}
                                 </span>
                               )}
                             </div>
@@ -137,7 +178,8 @@ const Cart = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  onClick={() => updateQuantity.mutate({ itemId: item.id, quantity: item.quantity - 1 })}
+                                  disabled={updateQuantity.isPending}
                                 >
                                   <Minus className="h-4 w-4" />
                                 </Button>
@@ -146,7 +188,8 @@ const Cart = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8"
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  onClick={() => updateQuantity.mutate({ itemId: item.id, quantity: item.quantity + 1 })}
+                                  disabled={updateQuantity.isPending}
                                 >
                                   <Plus className="h-4 w-4" />
                                 </Button>
@@ -156,7 +199,8 @@ const Cart = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleRemove(item.id, item.name)}
+                                onClick={() => handleRemove(item.id, item.products.name)}
+                                disabled={removeFromCart.isPending}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Remove
@@ -168,7 +212,7 @@ const Cart = () => {
                           <div className="hidden lg:flex flex-col items-end justify-center">
                             <span className="text-sm text-muted-foreground">Total</span>
                             <span className="text-xl font-bold gradient-text">
-                              ₹{(item.price * item.quantity).toLocaleString()}
+                              ₹{(item.products.price * item.quantity).toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -183,9 +227,11 @@ const Cart = () => {
                     variant="ghost"
                     className="text-muted-foreground"
                     onClick={() => {
-                      clearCart();
-                      toast.info('Cart cleared');
+                      clearCart.mutate(undefined, {
+                        onSuccess: () => toast.info('Cart cleared'),
+                      });
                     }}
+                    disabled={clearCart.isPending}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Clear Cart
