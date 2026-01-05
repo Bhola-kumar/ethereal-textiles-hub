@@ -84,7 +84,7 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod' | 'bank'>('upi');
   const [sellerPayments, setSellerPayments] = useState<SellerPaymentInfo[]>([]);
   const [sellerCartTotals, setSellerCartTotals] = useState<SellerCartTotal[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,22 +157,36 @@ export default function Checkout() {
 
     if (sellerIds.length === 0) {
       // If still no seller IDs found, allow COD as fallback
-      setSellerPayments([{
-        seller_id: 'unknown',
-        shop_name: 'Seller',
-        upi_id: null,
-        accepts_cod: true,
-        payment_instructions: null,
-        payment_qr_url: null,
-        shipping_charge: 0,
-        free_shipping_above: null,
-        gst_percentage: 0,
-        charge_gst: false,
-        convenience_charge: 0,
-        charge_convenience: false,
-      }]);
-      return;
-    }
+        const fallbackPayment = {
+          seller_id: 'unknown',
+          shop_name: 'Seller',
+          upi_id: null,
+          accepts_cod: true,
+          payment_instructions: null,
+          payment_qr_url: null,
+          shipping_charge: 0,
+          free_shipping_above: null,
+          gst_percentage: 0,
+          charge_gst: false,
+          convenience_charge: 0,
+          charge_convenience: false,
+        };
+        setSellerPayments([fallbackPayment]);
+        // Also set cart totals for fallback
+        setSellerCartTotals([{
+          seller_id: 'unknown',
+          shop_name: 'Seller',
+          amount: subtotal,
+          upi_id: null,
+          payment_qr_url: null,
+          payment_instructions: null,
+          accepts_cod: true,
+          shipping_charge: 0,
+          gst_amount: 0,
+          convenience_charge: 0,
+        }]);
+        return;
+      }
 
     try {
       // Use the public view that's accessible to all users for checkout
@@ -274,7 +288,7 @@ export default function Checkout() {
       } else {
         // No seller data found - provide fallback with COD
         console.warn('No seller payment info found for sellers:', sellerIds);
-        setSellerPayments([{
+        const fallbackPayment = {
           seller_id: sellerIds[0],
           shop_name: 'Seller',
           upi_id: null,
@@ -287,12 +301,26 @@ export default function Checkout() {
           charge_gst: false,
           convenience_charge: 0,
           charge_convenience: false,
+        };
+        setSellerPayments([fallbackPayment]);
+        // Also set cart totals for fallback
+        setSellerCartTotals([{
+          seller_id: sellerIds[0],
+          shop_name: 'Seller',
+          amount: subtotal,
+          upi_id: null,
+          payment_qr_url: null,
+          payment_instructions: null,
+          accepts_cod: true,
+          shipping_charge: 0,
+          gst_amount: 0,
+          convenience_charge: 0,
         }]);
       }
     } catch (err) {
       console.error('Failed to fetch seller payment info:', err);
       // Fallback to COD on any error
-      setSellerPayments([{
+      const fallbackPayment = {
         seller_id: sellerIds[0] || 'unknown',
         shop_name: 'Seller',
         upi_id: null,
@@ -305,6 +333,20 @@ export default function Checkout() {
         charge_gst: false,
         convenience_charge: 0,
         charge_convenience: false,
+      };
+      setSellerPayments([fallbackPayment]);
+      // Also set cart totals for fallback
+      setSellerCartTotals([{
+        seller_id: sellerIds[0] || 'unknown',
+        shop_name: 'Seller',
+        amount: subtotal,
+        upi_id: null,
+        payment_qr_url: null,
+        payment_instructions: null,
+        accepts_cod: true,
+        shipping_charge: 0,
+        gst_amount: 0,
+        convenience_charge: 0,
       }]);
     }
   };
@@ -415,6 +457,8 @@ export default function Checkout() {
           payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
           notes: paymentMethod === 'cod'
             ? `Cash on Delivery | GST: ₹${verifiedGst.toFixed(2)} | Convenience: ₹${verifiedConvenience.toFixed(2)}`
+            : paymentMethod === 'bank'
+            ? `Bank Transfer/Card | Transaction ID: ${transactionId || 'Pending'} | GST: ₹${verifiedGst.toFixed(2)} | Convenience: ₹${verifiedConvenience.toFixed(2)}`
             : `UPI Payment | Transaction ID: ${transactionId || 'Pending'} | GST: ₹${verifiedGst.toFixed(2)} | Convenience: ₹${verifiedConvenience.toFixed(2)}`,
         })
         .select()
@@ -709,7 +753,7 @@ export default function Checkout() {
                         </p>
                       </div>
 
-                      <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'upi' | 'cod')}>
+                      <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'upi' | 'cod' | 'bank')}>
                         {anyUPIAvailable && (
                           <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${paymentMethod === 'upi' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/50'
                             }`}>
@@ -723,6 +767,17 @@ export default function Checkout() {
                             </label>
                           </div>
                         )}
+                        <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${paymentMethod === 'bank' ? 'border-blue-500 bg-blue-500/5' : 'border-border/50 hover:border-blue-500/50'
+                          }`}>
+                          <RadioGroupItem value="bank" id="bank" />
+                          <label htmlFor="bank" className="flex items-center gap-2 cursor-pointer flex-1">
+                            <CreditCard className="h-5 w-5 text-blue-500" />
+                            <div>
+                              <p className="font-medium">Bank Transfer / Card</p>
+                              <p className="text-sm text-muted-foreground">Pay via NEFT/IMPS or Debit/Credit Card</p>
+                            </div>
+                          </label>
+                        </div>
                         {anyCODAvailable && (
                           <div className={`flex items-center gap-3 p-4 border rounded-lg transition-colors ${paymentMethod === 'cod' ? 'border-green-500 bg-green-500/5' : 'border-border/50 hover:border-green-500/50'
                             }`}>
@@ -781,8 +836,9 @@ export default function Checkout() {
                       <div>
                         <h3 className="text-sm font-medium mb-2">Payment Method:</h3>
                         <div className="p-3 bg-muted/50 rounded-lg text-sm flex items-center gap-2">
-                          {paymentMethod === 'upi' ? <QrCode className="h-4 w-4 text-primary" /> : <Banknote className="h-4 w-4 text-green-500" />}
-                          {paymentMethod === 'upi' ? 'UPI Payment' : 'Cash on Delivery'}
+                          {paymentMethod === 'upi' && <><QrCode className="h-4 w-4 text-primary" /> UPI Payment</>}
+                          {paymentMethod === 'bank' && <><CreditCard className="h-4 w-4 text-blue-500" /> Bank Transfer / Card</>}
+                          {paymentMethod === 'cod' && <><Banknote className="h-4 w-4 text-green-500" /> Cash on Delivery</>}
                         </div>
                       </div>
 
@@ -810,7 +866,7 @@ export default function Checkout() {
                   </Card>
 
                   {/* UPI Payment Section */}
-                  {paymentMethod === 'upi' && sellerCartTotals.length > 0 && (
+                  {paymentMethod === 'upi' && (
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">Complete Payment</h3>
                       <p className="text-sm text-muted-foreground">
@@ -819,20 +875,78 @@ export default function Checkout() {
                       </p>
 
                       {/* Show QR codes for each seller */}
-                      <div className="grid gap-4">
-                        {sellerCartTotals.map((seller) => {
-                          const sellerTotal = seller.amount + seller.shipping_charge + seller.gst_amount + seller.convenience_charge;
-                          return (
-                            <PaymentQRCode
-                              key={seller.seller_id}
-                              seller={seller}
-                              amount={sellerTotal}
-                            />
-                          );
-                        })}
-                      </div>
+                      {sellerCartTotals.length > 0 && (
+                        <div className="grid gap-4">
+                          {sellerCartTotals.map((seller) => {
+                            const sellerTotal = seller.amount + seller.shipping_charge + seller.gst_amount + seller.convenience_charge;
+                            return (
+                              <PaymentQRCode
+                                key={seller.seller_id}
+                                seller={seller}
+                                amount={sellerTotal}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {/* Payment Confirmation */}
+                      <PaymentConfirmation
+                        onConfirm={handlePlaceOrder}
+                        isSubmitting={isSubmitting}
+                        total={total}
+                      />
+                    </div>
+                  )}
+
+                  {/* Bank Transfer / Card Payment Section */}
+                  {paymentMethod === 'bank' && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Bank Transfer / Card Payment</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Transfer the amount to the seller's bank account or pay using your debit/credit card.
+                        After payment, enter your transaction reference to confirm.
+                      </p>
+
+                      {/* Bank Details Card */}
+                      <Card className="border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-transparent">
+                        <CardContent className="p-6 space-y-4">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                              <CreditCard className="h-5 w-5 text-blue-500" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Payment Instructions</p>
+                              <p className="text-sm text-muted-foreground">
+                                Amount: ₹{total.toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                            <p className="text-sm font-medium">Payment Options:</p>
+                            <ul className="text-sm text-muted-foreground space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="text-blue-500 mt-0.5">•</span>
+                                <span><strong>Bank Transfer:</strong> Use NEFT/IMPS/RTGS to transfer to the seller's bank account. The seller will share bank details after order confirmation.</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="text-blue-500 mt-0.5">•</span>
+                                <span><strong>Debit/Credit Card:</strong> Contact the seller after placing the order for secure card payment options.</span>
+                              </li>
+                            </ul>
+                          </div>
+
+                          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                            <p className="text-sm text-amber-700 dark:text-amber-400">
+                              <strong>Note:</strong> Your order will be placed with "Payment Pending" status. 
+                              The seller will contact you with payment details within 24 hours.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Payment Confirmation for Bank Transfer */}
                       <PaymentConfirmation
                         onConfirm={handlePlaceOrder}
                         isSubmitting={isSubmitting}
