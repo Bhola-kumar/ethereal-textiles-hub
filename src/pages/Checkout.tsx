@@ -49,6 +49,9 @@ interface SellerPaymentInfo {
   charge_gst: boolean;
   convenience_charge: number;
   charge_convenience: boolean;
+  bank_account_name: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
 }
 
 interface SellerCartTotal {
@@ -62,6 +65,9 @@ interface SellerCartTotal {
   shipping_charge: number;
   gst_amount: number;
   convenience_charge: number;
+  bank_account_name: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
 }
 
 const addressSchema = z.object({
@@ -157,7 +163,7 @@ export default function Checkout() {
 
     if (sellerIds.length === 0) {
       // If still no seller IDs found, allow COD as fallback
-        const fallbackPayment = {
+        const fallbackPayment: SellerPaymentInfo = {
           seller_id: 'unknown',
           shop_name: 'Seller',
           upi_id: null,
@@ -170,6 +176,9 @@ export default function Checkout() {
           charge_gst: false,
           convenience_charge: 0,
           charge_convenience: false,
+          bank_account_name: null,
+          bank_account_number: null,
+          bank_ifsc: null,
         };
         setSellerPayments([fallbackPayment]);
         // Also set cart totals for fallback
@@ -184,6 +193,9 @@ export default function Checkout() {
           shipping_charge: 0,
           gst_amount: 0,
           convenience_charge: 0,
+          bank_account_name: null,
+          bank_account_number: null,
+          bank_ifsc: null,
         }]);
         return;
       }
@@ -192,7 +204,7 @@ export default function Checkout() {
       // Use the public view that's accessible to all users for checkout
       const { data, error } = await supabase
         .from('shops_payment_public')
-        .select('seller_id, shop_name, upi_id, accepts_cod, payment_instructions, payment_qr_url, shipping_charge, free_shipping_above, gst_percentage, charge_gst, convenience_charge, charge_convenience, is_active')
+        .select('seller_id, shop_name, upi_id, accepts_cod, payment_instructions, payment_qr_url, shipping_charge, free_shipping_above, gst_percentage, charge_gst, convenience_charge, charge_convenience, bank_account_name, bank_account_number, bank_ifsc, is_active')
         .in('seller_id', sellerIds)
         .eq('is_active', true);
 
@@ -212,6 +224,9 @@ export default function Checkout() {
           charge_gst: false,
           convenience_charge: 0,
           charge_convenience: false,
+          bank_account_name: null,
+          bank_account_number: null,
+          bank_ifsc: null,
         }]);
         return;
       }
@@ -230,6 +245,9 @@ export default function Checkout() {
           charge_gst: boolean | null;
           convenience_charge: number | null;
           charge_convenience: boolean | null;
+          bank_account_name: string | null;
+          bank_account_number: string | null;
+          bank_ifsc: string | null;
         }>;
 
         setSellerPayments(shopData.map(s => ({
@@ -240,6 +258,9 @@ export default function Checkout() {
           charge_gst: s.charge_gst ?? false,
           convenience_charge: Number(s.convenience_charge) || 0,
           charge_convenience: s.charge_convenience ?? false,
+          bank_account_name: s.bank_account_name ?? null,
+          bank_account_number: s.bank_account_number ?? null,
+          bank_ifsc: s.bank_ifsc ?? null,
         })));
 
         // Calculate totals per seller with charges
@@ -281,6 +302,9 @@ export default function Checkout() {
             shipping_charge: finalShipping,
             gst_amount: gstAmount,
             convenience_charge: finalConvenience,
+            bank_account_name: seller.bank_account_name,
+            bank_account_number: seller.bank_account_number,
+            bank_ifsc: seller.bank_ifsc,
           };
         });
 
@@ -288,7 +312,7 @@ export default function Checkout() {
       } else {
         // No seller data found - provide fallback with COD
         console.warn('No seller payment info found for sellers:', sellerIds);
-        const fallbackPayment = {
+        const fallbackPayment: SellerPaymentInfo = {
           seller_id: sellerIds[0],
           shop_name: 'Seller',
           upi_id: null,
@@ -301,6 +325,9 @@ export default function Checkout() {
           charge_gst: false,
           convenience_charge: 0,
           charge_convenience: false,
+          bank_account_name: null,
+          bank_account_number: null,
+          bank_ifsc: null,
         };
         setSellerPayments([fallbackPayment]);
         // Also set cart totals for fallback
@@ -315,12 +342,15 @@ export default function Checkout() {
           shipping_charge: 0,
           gst_amount: 0,
           convenience_charge: 0,
+          bank_account_name: null,
+          bank_account_number: null,
+          bank_ifsc: null,
         }]);
       }
     } catch (err) {
       console.error('Failed to fetch seller payment info:', err);
       // Fallback to COD on any error
-      const fallbackPayment = {
+      const fallbackPayment: SellerPaymentInfo = {
         seller_id: sellerIds[0] || 'unknown',
         shop_name: 'Seller',
         upi_id: null,
@@ -333,6 +363,9 @@ export default function Checkout() {
         charge_gst: false,
         convenience_charge: 0,
         charge_convenience: false,
+        bank_account_name: null,
+        bank_account_number: null,
+        bank_ifsc: null,
       };
       setSellerPayments([fallbackPayment]);
       // Also set cart totals for fallback
@@ -347,6 +380,9 @@ export default function Checkout() {
         shipping_charge: 0,
         gst_amount: 0,
         convenience_charge: 0,
+        bank_account_name: null,
+        bank_account_number: null,
+        bank_ifsc: null,
       }]);
     }
   };
@@ -908,43 +944,76 @@ export default function Checkout() {
                         After payment, enter your transaction reference to confirm.
                       </p>
 
-                      {/* Bank Details Card */}
-                      <Card className="border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-transparent">
-                        <CardContent className="p-6 space-y-4">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                              <CreditCard className="h-5 w-5 text-blue-500" />
-                            </div>
-                            <div>
-                              <p className="font-medium">Payment Instructions</p>
-                              <p className="text-sm text-muted-foreground">
-                                Amount: ₹{total.toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
+                      {/* Show Bank Details for each seller */}
+                      {sellerCartTotals.map((seller) => {
+                        const sellerTotal = seller.amount + seller.shipping_charge + seller.gst_amount + seller.convenience_charge;
+                        const hasBankDetails = seller.bank_account_name && seller.bank_account_number && seller.bank_ifsc;
+                        
+                        return (
+                          <Card key={seller.seller_id} className="border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-transparent">
+                            <CardContent className="p-6 space-y-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                  <CreditCard className="h-5 w-5 text-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{seller.shop_name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Amount: ₹{sellerTotal.toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
 
-                          <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                            <p className="text-sm font-medium">Payment Options:</p>
-                            <ul className="text-sm text-muted-foreground space-y-2">
-                              <li className="flex items-start gap-2">
-                                <span className="text-blue-500 mt-0.5">•</span>
-                                <span><strong>Bank Transfer:</strong> Use NEFT/IMPS/RTGS to transfer to the seller's bank account. The seller will share bank details after order confirmation.</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="text-blue-500 mt-0.5">•</span>
-                                <span><strong>Debit/Credit Card:</strong> Contact the seller after placing the order for secure card payment options.</span>
-                              </li>
-                            </ul>
-                          </div>
+                              {hasBankDetails ? (
+                                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                                  <p className="text-sm font-medium">Bank Account Details:</p>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Account Holder:</span>
+                                      <span className="font-medium">{seller.bank_account_name}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Account Number:</span>
+                                      <span className="font-medium font-mono">{seller.bank_account_number}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">IFSC Code:</span>
+                                      <span className="font-medium font-mono">{seller.bank_ifsc}</span>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    Use NEFT/IMPS/RTGS to transfer. Include your name in the remarks.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                                  <p className="text-sm text-muted-foreground">
+                                    <strong>Bank Transfer:</strong> The seller will share bank details after order confirmation.
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    <strong>Debit/Credit Card:</strong> Contact the seller after placing the order for secure card payment options.
+                                  </p>
+                                </div>
+                              )}
 
-                          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                            <p className="text-sm text-amber-700 dark:text-amber-400">
-                              <strong>Note:</strong> Your order will be placed with "Payment Pending" status. 
-                              The seller will contact you with payment details within 24 hours.
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                              {seller.payment_instructions && (
+                                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                                  <p className="text-sm">
+                                    <strong>Seller's Instructions:</strong> {seller.payment_instructions}
+                                  </p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                        <p className="text-sm text-amber-700 dark:text-amber-400">
+                          <strong>Note:</strong> Your order will be placed with "Payment Pending" status. 
+                          Please complete the payment within 24 hours and share the transaction reference.
+                        </p>
+                      </div>
 
                       {/* Payment Confirmation for Bank Transfer */}
                       <PaymentConfirmation

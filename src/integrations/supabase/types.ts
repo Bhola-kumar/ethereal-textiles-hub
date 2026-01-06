@@ -1132,6 +1132,9 @@ export type Database = {
       shops_payment_public: {
         Row: {
           accepts_cod: boolean | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
           charge_convenience: boolean | null
           charge_gst: boolean | null
           convenience_charge: number | null
@@ -1150,6 +1153,9 @@ export type Database = {
         }
         Insert: {
           accepts_cod?: boolean | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
           charge_convenience?: boolean | null
           charge_gst?: boolean | null
           convenience_charge?: number | null
@@ -1168,6 +1174,9 @@ export type Database = {
         }
         Update: {
           accepts_cod?: boolean | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
           charge_convenience?: boolean | null
           charge_gst?: boolean | null
           convenience_charge?: number | null
