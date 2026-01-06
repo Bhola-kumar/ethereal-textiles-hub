@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Store, MapPin, CreditCard, Save, CheckCircle, Upload, X, Loader2, Image as ImageIcon, Info } from 'lucide-react';
+import { Store, MapPin, Save, CheckCircle, Upload, X, Loader2, Image as ImageIcon, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { IMAGE_GUIDELINES, processImageForUpload, formatFileSize } from '@/lib/imageUtils';
 import {
@@ -54,11 +54,6 @@ const shopSchema = z.object({
   banner_url: z.string().url().optional().or(z.literal('')),
 });
 
-const bankSchema = z.object({
-  bank_account_name: z.string().min(3).max(100),
-  bank_account_number: z.string().min(8).max(20),
-  bank_ifsc: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Enter valid IFSC code'),
-});
 
 export default function SellerShop() {
   const { user } = useAuth();
@@ -88,11 +83,6 @@ export default function SellerShop() {
     gst_number: '',
   });
 
-  const [bankForm, setBankForm] = useState({
-    bank_account_name: '',
-    bank_account_number: '',
-    bank_ifsc: '',
-  });
 
   useEffect(() => {
     if (user) {
@@ -123,11 +113,6 @@ export default function SellerShop() {
         state: data.state || '',
         pincode: data.pincode || '',
         gst_number: data.gst_number || '',
-      });
-      setBankForm({
-        bank_account_name: data.bank_account_name || '',
-        bank_account_number: data.bank_account_number || '',
-        bank_ifsc: data.bank_ifsc || '',
       });
     }
     setLoading(false);
@@ -243,38 +228,6 @@ export default function SellerShop() {
     }
   };
 
-  const handleSaveBank = async () => {
-    if (!bankForm.bank_account_name || !bankForm.bank_account_number || !bankForm.bank_ifsc) {
-      toast.error('Please fill all bank details');
-      return;
-    }
-
-    const result = bankSchema.safeParse(bankForm);
-    if (!result.success) {
-      toast.error(result.error.errors[0].message);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('shops')
-        .update({
-          bank_account_name: bankForm.bank_account_name,
-          bank_account_number: bankForm.bank_account_number,
-          bank_ifsc: bankForm.bank_ifsc,
-        })
-        .eq('id', shop!.id);
-
-      if (error) throw error;
-      toast.success('Bank details updated');
-      fetchShop();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const logoGuidelines = IMAGE_GUIDELINES.shopLogo;
   const bannerGuidelines = IMAGE_GUIDELINES.shopBanner;
@@ -320,9 +273,6 @@ export default function SellerShop() {
             </TabsTrigger>
             <TabsTrigger value="address" className="gap-2">
               <MapPin className="h-4 w-4" /> Address & GST
-            </TabsTrigger>
-            <TabsTrigger value="bank" className="gap-2">
-              <CreditCard className="h-4 w-4" /> Bank Details
             </TabsTrigger>
           </TabsList>
 
@@ -623,54 +573,6 @@ export default function SellerShop() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="bank">
-            <Card className="border-border/50 bg-card/50">
-              <CardHeader>
-                <CardTitle>Bank Account Details</CardTitle>
-                <CardDescription>For receiving payments (settlements every week)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Account Holder Name *</Label>
-                  <Input
-                    value={bankForm.bank_account_name}
-                    onChange={e => setBankForm({ ...bankForm, bank_account_name: e.target.value })}
-                    placeholder="As per bank records"
-                  />
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Account Number *</Label>
-                    <Input
-                      value={bankForm.bank_account_number}
-                      onChange={e => setBankForm({ ...bankForm, bank_account_number: e.target.value })}
-                      placeholder="Enter account number"
-                    />
-                  </div>
-                  <div>
-                    <Label>IFSC Code *</Label>
-                    <Input
-                      value={bankForm.bank_ifsc}
-                      onChange={e => setBankForm({ ...bankForm, bank_ifsc: e.target.value.toUpperCase() })}
-                      placeholder="e.g., SBIN0001234"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <p className="text-sm text-amber-500">
-                    ⚠️ Please ensure bank details are correct. Incorrect details may delay your payments.
-                  </p>
-                </div>
-
-                <Button onClick={handleSaveBank} variant="hero" disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Bank Details'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </motion.div>
     </div>
