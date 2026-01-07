@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -22,25 +21,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 import { 
   ShoppingCart, 
   Package, 
-  Eye, 
   Truck, 
   CheckCircle, 
-  CreditCard,
   Clock,
   XCircle,
   AlertCircle,
-  FileText,
-  MessageCircle,
-  RotateCcw
+  RotateCcw,
+  Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import OrderInvoice from '@/components/order/OrderInvoice';
 import { OrderChatModal } from '@/components/order/OrderChatModal';
-import { ReturnStatusBadge } from '@/components/order/ReturnStatusBadge';
+import { SellerOrderCard } from '@/components/order/SellerOrderCard';
+import { SellerOrderDetailModal } from '@/components/order/SellerOrderDetailModal';
 import { useUpdateReturnRequest, ReturnRequest } from '@/hooks/useReturnRequests';
 
 interface OrderItem {
@@ -78,6 +74,7 @@ const declineReasons = [
 ];
 
 const statusOptions = [
+  { value: 'all', label: 'All Orders', icon: ShoppingCart },
   { value: 'pending', label: 'Pending', icon: Clock },
   { value: 'confirmed', label: 'Confirmed', icon: CheckCircle },
   { value: 'packed', label: 'Packed', icon: Package },
@@ -87,25 +84,16 @@ const statusOptions = [
   { value: 'cancelled', label: 'Cancelled', icon: XCircle },
 ];
 
-const paymentStatusOptions = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'refunded', label: 'Refunded' },
-];
-
 export default function SellerOrders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState(false);
-  const [trackingId, setTrackingId] = useState('');
-  const [newStatus, setNewStatus] = useState('');
-  const [newPaymentStatus, setNewPaymentStatus] = useState('');
   const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
   const [shopInfo, setShopInfo] = useState<any>(null);
   const [declineReason, setDeclineReason] = useState('');
@@ -167,7 +155,7 @@ export default function SellerOrders() {
   const fetchShopInfo = async () => {
     const { data } = await supabase
       .from('shops')
-      .select('shop_name, address, city, state, pincode, phone, email, gst_number, auto_confirm_orders, auto_confirm_hours')
+      .select('shop_name, address, city, state, pincode, phone, email, gst_number')
       .eq('seller_id', user!.id)
       .single();
     
@@ -176,7 +164,6 @@ export default function SellerOrders() {
 
   const fetchOrders = async () => {
     try {
-      // Get seller's products
       const { data: sellerProducts } = await supabase
         .from('products')
         .select('id')
@@ -190,7 +177,6 @@ export default function SellerOrders() {
         return;
       }
 
-      // Get order items for seller's products
       const { data: orderItems, error } = await supabase
         .from('order_items')
         .select(`
@@ -211,7 +197,9 @@ export default function SellerOrders() {
             shipping_address,
             created_at,
             notes,
-            tracking_id
+            tracking_id,
+            decline_reason,
+            declined_at
           )
         `)
         .in('product_id', productIds)
@@ -219,7 +207,6 @@ export default function SellerOrders() {
 
       if (error) throw error;
 
-      // Group by order
       const orderMap = new Map<string, Order>();
       orderItems?.forEach(item => {
         const order = item.orders as any;
@@ -249,68 +236,32 @@ export default function SellerOrders() {
     }
   };
 
-  const handleOpenUpdateDialog = (order: Order) => {
-    setSelectedOrder(order);
-    setNewStatus(order.status);
-    setNewPaymentStatus(order.payment_status);
-    setTrackingId(order.tracking_id || '');
-    setShowUpdateDialog(true);
-  };
-
-  const handleUpdateOrder = async () => {
-    if (!selectedOrder) return;
-
-    // Require tracking ID when shipping
-    if (newStatus === 'shipped' && !trackingId.trim()) {
-      toast.error('Tracking ID is required when shipping an order');
-      return;
-    }
-
+  const handleUpdateOrder = async (orderId: string, status: string, paymentStatus: string, trackingId?: string) => {
     setUpdatingOrder(true);
     try {
-      const updates: {
-        status: "pending" | "confirmed" | "packed" | "shipped" | "out_for_delivery" | "delivered" | "cancelled" | "returned";
-        payment_status: "pending" | "paid" | "failed" | "refunded";
-        tracking_id?: string;
-      } = {
-        status: newStatus as any,
-        payment_status: newPaymentStatus as any,
+      const updates: any = {
+        status,
+        payment_status: paymentStatus,
       };
 
-      if (trackingId.trim()) {
+      if (trackingId?.trim()) {
         updates.tracking_id = trackingId.trim();
       }
 
       const { error } = await supabase
         .from('orders')
         .update(updates)
-        .eq('id', selectedOrder.id);
+        .eq('id', orderId);
 
       if (error) throw error;
 
       toast.success('Order updated successfully');
-      setShowUpdateDialog(false);
+      setShowDetailModal(false);
       fetchOrders();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update order');
     } finally {
       setUpdatingOrder(false);
-    }
-  };
-
-  const handleQuickStatusUpdate = async (orderId: string, status: "pending" | "confirmed" | "packed" | "shipped" | "out_for_delivery" | "delivered" | "cancelled" | "returned") => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      toast.success(`Order status updated to ${newStatus}`);
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update status');
     }
   };
 
@@ -327,6 +278,7 @@ export default function SellerOrders() {
       if (error) throw error;
 
       toast.success('Payment confirmed and order accepted');
+      setShowDetailModal(false);
       fetchOrders();
     } catch (error: any) {
       toast.error(error.message || 'Failed to confirm payment');
@@ -356,43 +308,27 @@ export default function SellerOrders() {
 
       if (error) throw error;
 
-      toast.success('Order declined. Customer has been notified for payment reversal.');
+      toast.success('Order declined');
       setShowDeclineDialog(false);
+      setShowDetailModal(false);
       setDeclineReason('');
       setCustomDeclineReason('');
       setSelectedOrder(null);
       fetchOrders();
     } catch (error: any) {
       toast.error(error.message || 'Failed to decline order');
+    } finally {
+      setUpdatingOrder(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
-      confirmed: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30',
-      packed: 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30',
-      shipped: 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-      out_for_delivery: 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30',
-      delivered: 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30',
-      cancelled: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
-    };
-    return colors[status] || 'bg-gray-500/20 text-gray-600 dark:text-gray-400';
-  };
-
-  const getPaymentColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400',
-      paid: 'bg-green-500/20 text-green-600 dark:text-green-400',
-      failed: 'bg-red-500/20 text-red-600 dark:text-red-400',
-      refunded: 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
-    };
-    return colors[status] || 'bg-gray-500/20 text-gray-600 dark:text-gray-400';
-  };
-
-  const filteredOrders = statusFilter === 'all' 
-    ? orders 
-    : orders.filter(o => o.status === statusFilter);
+  const filteredOrders = orders
+    .filter(o => statusFilter === 'all' || o.status === statusFilter)
+    .filter(o => 
+      !searchQuery || 
+      o.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      o.items.some(item => item.product_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
   const getOrderStats = () => {
     return {
@@ -405,10 +341,9 @@ export default function SellerOrders() {
   };
 
   const stats = getOrderStats();
-
-  // Get orders needing payment verification
-  const ordersNeedingPaymentVerification = orders.filter(
-    o => o.status === 'pending' && o.payment_status === 'pending' && o.notes?.includes('UPI')
+  const ordersNeedingAction = orders.filter(
+    o => (o.status === 'pending' && o.payment_status === 'pending') || 
+         returnRequests.some(r => r.order_id === o.id && r.status === 'pending')
   );
 
   if (loading) {
@@ -420,44 +355,52 @@ export default function SellerOrders() {
   }
 
   return (
-    <div className="p-4 lg:p-8">
+    <div className="p-4 lg:p-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">Orders</h1>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Orders</SelectItem>
-              {statusOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h1 className="text-xl lg:text-2xl font-display font-bold text-foreground">Orders</h1>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:w-48">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search orders..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-36 h-8 text-sm">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Payment Verification Alert */}
-        {ordersNeedingPaymentVerification.length > 0 && (
-          <Card className="mb-6 border-amber-500/50 bg-amber-500/10">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-amber-700 dark:text-amber-400">
-                    {ordersNeedingPaymentVerification.length} order(s) awaiting payment verification
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Review the UPI transaction IDs provided by customers and confirm payments to process orders.
-                  </p>
-                </div>
+        {/* Action Required Alert */}
+        {ordersNeedingAction.length > 0 && (
+          <Card className="mb-4 border-amber-500/50 bg-amber-500/10">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  <span className="font-medium">{ordersNeedingAction.length}</span> order(s) need your attention
+                </p>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {/* Compact Stats */}
+        <div className="grid grid-cols-5 gap-2 mb-4">
           {[
             { label: 'Total', value: stats.total, icon: ShoppingCart },
             { label: 'Pending', value: stats.pending, icon: Clock },
@@ -466,385 +409,105 @@ export default function SellerOrders() {
             { label: 'Delivered', value: stats.delivered, icon: CheckCircle },
           ].map((stat) => (
             <Card key={stat.label} className="bg-card/50 border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <stat.icon className="h-8 w-8 text-muted-foreground" />
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                </div>
+              <CardContent className="p-2 flex flex-col items-center">
+                <stat.icon className="h-4 w-4 text-muted-foreground mb-1" />
+                <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground">{stat.label}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Orders List */}
+        {/* Orders List - Compact Cards */}
         {filteredOrders.length === 0 ? (
           <Card className="bg-card/50 border-border/50">
-            <CardContent className="py-12 text-center">
-              <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No orders found</p>
+            <CardContent className="py-8 text-center">
+              <ShoppingCart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No orders found</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {filteredOrders.map((order) => (
-              <Card key={order.id} className="bg-card/50 border-border/50 overflow-hidden">
-                <CardHeader className="bg-accent/30 py-3 px-4 lg:px-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CardTitle className="text-base font-medium">{order.order_number}</CardTitle>
-                      <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                      <Badge className={getPaymentColor(order.payment_status)}>
-                        {order.payment_status}
-                      </Badge>
-                      {/* Show return request status */}
-                      {getReturnRequest(order.id) && (
-                        <ReturnStatusBadge 
-                          status={getReturnRequest(order.id)!.status}
-                          refundStatus={getReturnRequest(order.id)!.refund_status}
-                        />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setInvoiceOrder(order)}
-                      >
-                        <FileText className="h-4 w-4 mr-1" />
-                        Invoice
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setChatOrder({ id: order.id, orderNumber: order.order_number })}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        Chat
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenUpdateDialog(order)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Manage
-                      </Button>
-                      {/* Handle Return Request button */}
-                      {getReturnRequest(order.id) && getReturnRequest(order.id)!.status === 'pending' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-orange-600 hover:text-orange-700"
-                          onClick={() => {
-                            setSelectedReturn(getReturnRequest(order.id)!);
-                            setShowReturnDialog(true);
-                          }}
-                        >
-                          <RotateCcw className="h-4 w-4 mr-1" />
-                          Handle Return
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 lg:p-6">
-                  <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Items */}
-                    <div className="lg:col-span-2 space-y-3">
-                      {order.items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-4 p-3 bg-accent/20 rounded-lg">
-                          {item.product_image ? (
-                            <img src={item.product_image} alt={item.product_name} className="w-16 h-16 object-cover rounded" />
-                          ) : (
-                            <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                              <Package className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{item.product_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              Qty: {item.quantity} × ₹{item.price.toLocaleString()}
-                            </p>
-                          </div>
-                          <p className="font-semibold text-foreground">
-                            ₹{(item.quantity * item.price).toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-
-                      {/* Quick Actions */}
-                      {order.status === 'pending' && order.payment_status === 'pending' && order.notes?.includes('UPI') && (
-                        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                          <div className="flex items-start gap-3">
-                            <CreditCard className="h-5 w-5 text-amber-500 shrink-0" />
-                            <div className="flex-1">
-                              <p className="font-medium text-amber-700 dark:text-amber-400">
-                                Payment Verification Required
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {order.notes}
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <Button
-                                  variant="hero"
-                                  size="sm"
-                                  onClick={() => handleConfirmPayment(order.id)}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Accept Order
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedOrder(order);
-                                    setShowDeclineDialog(true);
-                                  }}
-                                >
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Decline Order
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {order.status === 'pending' && order.notes?.includes('Cash on Delivery') && (
-                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                          <div className="flex items-start gap-3">
-                            <Package className="h-5 w-5 text-green-500 shrink-0" />
-                            <div className="flex-1">
-                              <p className="font-medium text-green-700 dark:text-green-400">
-                                Cash on Delivery Order
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Payment will be collected upon delivery.
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <Button
-                                  variant="hero"
-                                  size="sm"
-                                  onClick={() => handleQuickStatusUpdate(order.id, 'confirmed')}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Accept Order
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedOrder(order);
-                                    setShowDeclineDialog(true);
-                                  }}
-                                >
-                                  <XCircle className="h-4 w-4 mr-1" />
-                                  Decline Order
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {order.status === 'confirmed' && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleQuickStatusUpdate(order.id, 'packed')}
-                          >
-                            <Package className="h-4 w-4 mr-1" />
-                            Mark as Packed
-                          </Button>
-                        </div>
-                      )}
-
-                      {order.status === 'packed' && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenUpdateDialog(order)}
-                          >
-                            <Truck className="h-4 w-4 mr-1" />
-                            Add Tracking & Ship
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Shipping & Summary */}
-                    <div className="space-y-4">
-                      <div className="p-4 bg-accent/20 rounded-lg">
-                        <p className="text-sm font-medium text-foreground mb-2">Shipping Address</p>
-                        <div className="text-sm text-muted-foreground">
-                          <p>{order.shipping_address?.full_name}</p>
-                          <p>{order.shipping_address?.address_line1}</p>
-                          {order.shipping_address?.address_line2 && <p>{order.shipping_address.address_line2}</p>}
-                          <p>{order.shipping_address?.city}, {order.shipping_address?.state} - {order.shipping_address?.pincode}</p>
-                          <p className="mt-1 font-medium">Phone: {order.shipping_address?.phone}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="p-4 bg-primary/10 rounded-lg">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span className="text-foreground">₹{Number(order.subtotal).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">Shipping</span>
-                          <span className="text-foreground">₹{Number(order.shipping_cost || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold text-lg border-t border-border pt-2">
-                          <span>Total</span>
-                          <span className="text-primary">₹{Number(order.total).toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <SellerOrderCard
+                key={order.id}
+                order={order}
+                returnRequest={getReturnRequest(order.id)}
+                onClick={() => {
+                  setSelectedOrder(order);
+                  setShowDetailModal(true);
+                }}
+              />
             ))}
           </div>
         )}
       </motion.div>
 
-      {/* Update Order Dialog */}
-      <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Update Order</DialogTitle>
-            <DialogDescription>
-              Update order status and add tracking information.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Order Status</Label>
-              <Select value={newStatus} onValueChange={setNewStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <div className="flex items-center gap-2">
-                        <opt.icon className="h-4 w-4" />
-                        {opt.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Payment Status</Label>
-              <Select value={newPaymentStatus} onValueChange={setNewPaymentStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentStatusOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>
-                Tracking ID {newStatus === 'shipped' && <span className="text-destructive">*</span>}
-              </Label>
-              <Input
-                placeholder="Enter shipping tracking number"
-                value={trackingId}
-                onChange={(e) => setTrackingId(e.target.value)}
-                required={newStatus === 'shipped'}
-              />
-              <p className="text-xs text-muted-foreground">
-                {newStatus === 'shipped' 
-                  ? 'Tracking ID is required when shipping the order'
-                  : 'Add tracking ID when shipping the order'}
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUpdateDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="hero" 
-              onClick={handleUpdateOrder}
-              disabled={updatingOrder}
-            >
-              {updatingOrder ? 'Updating...' : 'Update Order'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Order Detail Modal */}
+      <SellerOrderDetailModal
+        order={selectedOrder}
+        returnRequest={selectedOrder ? getReturnRequest(selectedOrder.id) : undefined}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        onUpdateOrder={handleUpdateOrder}
+        onConfirmPayment={handleConfirmPayment}
+        onDeclineOrder={(order) => {
+          setSelectedOrder(order);
+          setShowDeclineDialog(true);
+        }}
+        onViewInvoice={(order) => setInvoiceOrder(order)}
+        onOpenChat={(order) => setChatOrder({ id: order.id, orderNumber: order.order_number })}
+        onHandleReturn={(returnReq) => {
+          setSelectedReturn(returnReq);
+          setShowReturnDialog(true);
+        }}
+      />
 
       {/* Decline Order Dialog */}
       <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-destructive">Decline Order</DialogTitle>
-            <DialogDescription>
-              This will cancel the order and notify the customer to request a payment refund.
+            <DialogTitle className="text-destructive text-base">Decline Order</DialogTitle>
+            <DialogDescription className="text-xs">
+              This will cancel the order and notify the customer.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Reason for Declining</Label>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Reason for Declining</Label>
               <Select value={declineReason} onValueChange={setDeclineReason}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="Select a reason" />
                 </SelectTrigger>
                 <SelectContent>
                   {declineReasons.map(reason => (
-                    <SelectItem key={reason} value={reason}>{reason}</SelectItem>
+                    <SelectItem key={reason} value={reason} className="text-sm">{reason}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             {declineReason === 'Other' && (
-              <div className="space-y-2">
-                <Label>Custom Reason</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Custom Reason</Label>
                 <Input
-                  placeholder="Enter reason for declining"
+                  placeholder="Enter reason"
                   value={customDeclineReason}
                   onChange={(e) => setCustomDeclineReason(e.target.value)}
+                  className="h-8 text-sm"
                 />
               </div>
             )}
-
-            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                <strong>Payment Reversal:</strong> The customer will be notified to contact you for payment refund. 
-                Please process the refund manually via UPI or bank transfer.
-              </p>
-            </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeclineDialog(false)}>
+            <Button variant="outline" size="sm" onClick={() => setShowDeclineDialog(false)}>
               Cancel
             </Button>
             <Button 
               variant="destructive" 
+              size="sm"
               onClick={handleDeclineOrder}
               disabled={updatingOrder || (!declineReason || (declineReason === 'Other' && !customDeclineReason))}
             >
@@ -877,7 +540,7 @@ export default function SellerOrders() {
         />
       )}
 
-      {/* Chat with Customer Modal */}
+      {/* Chat Modal */}
       {chatOrder && (
         <OrderChatModal
           isOpen={!!chatOrder}
@@ -892,70 +555,56 @@ export default function SellerOrders() {
       <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <RotateCcw className="h-5 w-5 text-orange-500" />
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <RotateCcw className="h-4 w-4 text-orange-500" />
               Handle Return Request
             </DialogTitle>
-            <DialogDescription>
-              Review the customer's return request and respond accordingly.
-            </DialogDescription>
           </DialogHeader>
+          
           {selectedReturn && (
-            <div className="space-y-4">
-              <div className="p-3 bg-accent/30 rounded-lg">
-                <p className="text-sm font-medium mb-1">Return Reason:</p>
-                <p className="text-sm text-muted-foreground">{selectedReturn.reason}</p>
+            <div className="space-y-3 py-2">
+              <div className="bg-accent/30 p-2 rounded text-xs">
+                <p className="font-medium">Reason: {selectedReturn.reason}</p>
                 {selectedReturn.description && (
-                  <>
-                    <p className="text-sm font-medium mt-2 mb-1">Additional Details:</p>
-                    <p className="text-sm text-muted-foreground">{selectedReturn.description}</p>
-                  </>
-                )}
-                {selectedReturn.refund_amount && (
-                  <p className="text-sm font-medium mt-2">
-                    Refund Requested: <span className="text-primary">₹{selectedReturn.refund_amount.toLocaleString()}</span>
-                  </p>
+                  <p className="text-muted-foreground mt-1">{selectedReturn.description}</p>
                 )}
               </div>
-              
-              <div className="space-y-2">
-                <Label>Response *</Label>
-                <Select
-                  value={returnResponse.status}
-                  onValueChange={(value) => setReturnResponse(prev => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select response" />
+
+              <div className="space-y-1">
+                <Label className="text-xs">Decision</Label>
+                <Select value={returnResponse.status} onValueChange={(v) => setReturnResponse(prev => ({ ...prev, status: v }))}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Select action" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="approved">Approve Return</SelectItem>
-                    <SelectItem value="rejected">Reject Return</SelectItem>
-                    <SelectItem value="processing">Mark as Processing</SelectItem>
-                    <SelectItem value="completed">Mark as Completed</SelectItem>
+                    <SelectItem value="approved" className="text-sm">Approve Return</SelectItem>
+                    <SelectItem value="rejected" className="text-sm">Reject Return</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="space-y-2">
-                <Label>Notes for Customer</Label>
-                <Textarea
-                  placeholder="Add notes or instructions for the customer..."
+
+              <div className="space-y-1">
+                <Label className="text-xs">Notes (Optional)</Label>
+                <Input
+                  placeholder="Add notes..."
                   value={returnResponse.notes}
                   onChange={(e) => setReturnResponse(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
+                  className="h-8 text-sm"
                 />
               </div>
             </div>
           )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReturnDialog(false)}>
+            <Button variant="outline" size="sm" onClick={() => setShowReturnDialog(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleReturnResponse}
+            <Button 
+              size="sm"
               disabled={!returnResponse.status || updateReturnRequest.isPending}
+              onClick={handleReturnResponse}
             >
-              {updateReturnRequest.isPending ? 'Submitting...' : 'Submit Response'}
+              {updateReturnRequest.isPending ? 'Submitting...' : 'Submit'}
             </Button>
           </DialogFooter>
         </DialogContent>
