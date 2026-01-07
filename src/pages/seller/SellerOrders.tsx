@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -13,14 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { 
   ShoppingCart, 
   Package, 
@@ -29,15 +19,10 @@ import {
   Clock,
   XCircle,
   AlertCircle,
-  RotateCcw,
   Search,
 } from 'lucide-react';
-import { toast } from 'sonner';
-import OrderInvoice from '@/components/order/OrderInvoice';
-import { OrderChatModal } from '@/components/order/OrderChatModal';
 import { SellerOrderCard } from '@/components/order/SellerOrderCard';
-import { SellerOrderDetailModal } from '@/components/order/SellerOrderDetailModal';
-import { useUpdateReturnRequest, ReturnRequest } from '@/hooks/useReturnRequests';
+import { ReturnRequest } from '@/hooks/useReturnRequests';
 
 interface OrderItem {
   id: string;
@@ -64,15 +49,6 @@ interface Order {
   items: OrderItem[];
 }
 
-const declineReasons = [
-  'Item not available in stock',
-  'Payment amount mismatch',
-  'Transaction ID not found',
-  'Duplicate order',
-  'Customer requested cancellation',
-  'Other',
-];
-
 const statusOptions = [
   { value: 'all', label: 'All Orders', icon: ShoppingCart },
   { value: 'pending', label: 'Pending', icon: Clock },
@@ -90,25 +66,11 @@ export default function SellerOrders() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
-  const [updatingOrder, setUpdatingOrder] = useState(false);
-  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
-  const [shopInfo, setShopInfo] = useState<any>(null);
-  const [declineReason, setDeclineReason] = useState('');
-  const [customDeclineReason, setCustomDeclineReason] = useState('');
-  const [chatOrder, setChatOrder] = useState<{ id: string; orderNumber: string } | null>(null);
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
-  const [showReturnDialog, setShowReturnDialog] = useState(false);
-  const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null);
-  const [returnResponse, setReturnResponse] = useState<{ status: string; notes: string }>({ status: '', notes: '' });
-  const updateReturnRequest = useUpdateReturnRequest();
 
   useEffect(() => {
     if (user) {
       fetchOrders();
-      fetchShopInfo();
       fetchReturnRequests();
     }
   }, [user]);
@@ -129,37 +91,6 @@ export default function SellerOrders() {
 
   const getReturnRequest = (orderId: string) => {
     return returnRequests.find(r => r.order_id === orderId);
-  };
-
-  const handleReturnResponse = async () => {
-    if (!selectedReturn || !returnResponse.status) return;
-    
-    try {
-      await updateReturnRequest.mutateAsync({
-        id: selectedReturn.id,
-        status: returnResponse.status,
-        admin_notes: returnResponse.notes || undefined,
-        refund_status: returnResponse.status === 'approved' ? 'processing' : 
-                       returnResponse.status === 'completed' ? 'processed' : undefined,
-      });
-      
-      setShowReturnDialog(false);
-      setSelectedReturn(null);
-      setReturnResponse({ status: '', notes: '' });
-      fetchReturnRequests();
-    } catch (error) {
-      console.error('Error updating return request:', error);
-    }
-  };
-
-  const fetchShopInfo = async () => {
-    const { data } = await supabase
-      .from('shops')
-      .select('shop_name, address, city, state, pincode, phone, email, gst_number')
-      .eq('seller_id', user!.id)
-      .single();
-    
-    if (data) setShopInfo(data);
   };
 
   const fetchOrders = async () => {
@@ -233,92 +164,6 @@ export default function SellerOrders() {
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleUpdateOrder = async (orderId: string, status: string, paymentStatus: string, trackingId?: string) => {
-    setUpdatingOrder(true);
-    try {
-      const updates: any = {
-        status,
-        payment_status: paymentStatus,
-      };
-
-      if (trackingId?.trim()) {
-        updates.tracking_id = trackingId.trim();
-      }
-
-      const { error } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      toast.success('Order updated successfully');
-      setShowDetailModal(false);
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update order');
-    } finally {
-      setUpdatingOrder(false);
-    }
-  };
-
-  const handleConfirmPayment = async (orderId: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          payment_status: 'paid',
-          status: 'confirmed'
-        })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      toast.success('Payment confirmed and order accepted');
-      setShowDetailModal(false);
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to confirm payment');
-    }
-  };
-
-  const handleDeclineOrder = async () => {
-    if (!selectedOrder) return;
-
-    const finalReason = declineReason === 'Other' ? customDeclineReason : declineReason;
-    if (!finalReason) {
-      toast.error('Please select or enter a reason for declining');
-      return;
-    }
-
-    setUpdatingOrder(true);
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          status: 'cancelled',
-          payment_status: 'refunded',
-          decline_reason: finalReason,
-          declined_at: new Date().toISOString()
-        })
-        .eq('id', selectedOrder.id);
-
-      if (error) throw error;
-
-      toast.success('Order declined');
-      setShowDeclineDialog(false);
-      setShowDetailModal(false);
-      setDeclineReason('');
-      setCustomDeclineReason('');
-      setSelectedOrder(null);
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to decline order');
-    } finally {
-      setUpdatingOrder(false);
     }
   };
 
@@ -433,182 +278,11 @@ export default function SellerOrders() {
                 key={order.id}
                 order={order}
                 returnRequest={getReturnRequest(order.id)}
-                onClick={() => {
-                  setSelectedOrder(order);
-                  setShowDetailModal(true);
-                }}
               />
             ))}
           </div>
         )}
       </motion.div>
-
-      {/* Order Detail Modal */}
-      <SellerOrderDetailModal
-        order={selectedOrder}
-        returnRequest={selectedOrder ? getReturnRequest(selectedOrder.id) : undefined}
-        open={showDetailModal}
-        onOpenChange={setShowDetailModal}
-        onUpdateOrder={handleUpdateOrder}
-        onConfirmPayment={handleConfirmPayment}
-        onDeclineOrder={(order) => {
-          setSelectedOrder(order);
-          setShowDeclineDialog(true);
-        }}
-        onViewInvoice={(order) => setInvoiceOrder(order)}
-        onOpenChat={(order) => setChatOrder({ id: order.id, orderNumber: order.order_number })}
-        onHandleReturn={(returnReq) => {
-          setSelectedReturn(returnReq);
-          setShowReturnDialog(true);
-        }}
-      />
-
-      {/* Decline Order Dialog */}
-      <Dialog open={showDeclineDialog} onOpenChange={setShowDeclineDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-destructive text-base">Decline Order</DialogTitle>
-            <DialogDescription className="text-xs">
-              This will cancel the order and notify the customer.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Reason for Declining</Label>
-              <Select value={declineReason} onValueChange={setDeclineReason}>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Select a reason" />
-                </SelectTrigger>
-                <SelectContent>
-                  {declineReasons.map(reason => (
-                    <SelectItem key={reason} value={reason} className="text-sm">{reason}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {declineReason === 'Other' && (
-              <div className="space-y-1">
-                <Label className="text-xs">Custom Reason</Label>
-                <Input
-                  placeholder="Enter reason"
-                  value={customDeclineReason}
-                  onChange={(e) => setCustomDeclineReason(e.target.value)}
-                  className="h-8 text-sm"
-                />
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setShowDeclineDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={handleDeclineOrder}
-              disabled={updatingOrder || (!declineReason || (declineReason === 'Other' && !customDeclineReason))}
-            >
-              {updatingOrder ? 'Declining...' : 'Decline Order'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invoice Modal */}
-      {invoiceOrder && (
-        <OrderInvoice
-          order={{
-            id: invoiceOrder.id,
-            order_number: invoiceOrder.order_number,
-            created_at: invoiceOrder.created_at,
-            status: invoiceOrder.status,
-            payment_status: invoiceOrder.payment_status,
-            subtotal: invoiceOrder.subtotal,
-            shipping_cost: invoiceOrder.shipping_cost,
-            total: invoiceOrder.total,
-            shipping_address: invoiceOrder.shipping_address,
-            notes: invoiceOrder.notes,
-            tracking_id: invoiceOrder.tracking_id,
-            items: invoiceOrder.items,
-          }}
-          shopInfo={shopInfo}
-          open={!!invoiceOrder}
-          onOpenChange={(open) => !open && setInvoiceOrder(null)}
-        />
-      )}
-
-      {/* Chat Modal */}
-      {chatOrder && (
-        <OrderChatModal
-          isOpen={!!chatOrder}
-          onClose={() => setChatOrder(null)}
-          orderId={chatOrder.id}
-          orderNumber={chatOrder.orderNumber}
-          userType="seller"
-        />
-      )}
-
-      {/* Handle Return Request Dialog */}
-      <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <RotateCcw className="h-4 w-4 text-orange-500" />
-              Handle Return Request
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedReturn && (
-            <div className="space-y-3 py-2">
-              <div className="bg-accent/30 p-2 rounded text-xs">
-                <p className="font-medium">Reason: {selectedReturn.reason}</p>
-                {selectedReturn.description && (
-                  <p className="text-muted-foreground mt-1">{selectedReturn.description}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Decision</Label>
-                <Select value={returnResponse.status} onValueChange={(v) => setReturnResponse(prev => ({ ...prev, status: v }))}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select action" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="approved" className="text-sm">Approve Return</SelectItem>
-                    <SelectItem value="rejected" className="text-sm">Reject Return</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label className="text-xs">Notes (Optional)</Label>
-                <Input
-                  placeholder="Add notes..."
-                  value={returnResponse.notes}
-                  onChange={(e) => setReturnResponse(prev => ({ ...prev, notes: e.target.value }))}
-                  className="h-8 text-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setShowReturnDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              size="sm"
-              disabled={!returnResponse.status || updateReturnRequest.isPending}
-              onClick={handleReturnResponse}
-            >
-              {updateReturnRequest.isPending ? 'Submitting...' : 'Submit'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
