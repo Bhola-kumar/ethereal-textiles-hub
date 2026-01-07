@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Package, Clock, CheckCircle, Truck, XCircle, CreditCard, RotateCcw, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,7 +35,6 @@ interface Order {
 interface SellerOrderCardProps {
   order: Order;
   returnRequest?: ReturnRequest;
-  onClick: () => void;
 }
 
 const statusConfig: Record<string, { color: string; icon: typeof Clock }> = {
@@ -55,7 +55,8 @@ const paymentConfig: Record<string, string> = {
   refunded: 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
 };
 
-export function SellerOrderCard({ order, returnRequest, onClick }: SellerOrderCardProps) {
+export function SellerOrderCard({ order, returnRequest }: SellerOrderCardProps) {
+  const navigate = useNavigate();
   const statusInfo = statusConfig[order.status] || statusConfig.pending;
   const StatusIcon = statusInfo.icon;
   const needsPaymentVerification = order.status === 'pending' && order.payment_status === 'pending' && order.notes?.includes('UPI');
@@ -70,7 +71,7 @@ export function SellerOrderCard({ order, returnRequest, onClick }: SellerOrderCa
     >
       <Card 
         className="bg-card/50 border-border/50 cursor-pointer hover:border-primary/50 hover:shadow-md transition-all overflow-hidden"
-        onClick={onClick}
+        onClick={() => navigate(`/seller/orders/${order.id}`)}
       >
         <CardContent className="p-3">
           {/* Header Row */}

@@ -37,6 +37,7 @@ import SellerOrders from "./pages/seller/SellerOrders";
 import SellerAnalytics from "./pages/seller/SellerAnalytics";
 import SellerShop from "./pages/seller/SellerShop";
 import SellerSettings from "./pages/seller/SellerSettings";
+import SellerOrderDetail from "./pages/seller/SellerOrderDetail";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/utils/ScrollToTop";
 
@@ -85,6 +86,7 @@ const App = () => (
               <Route index element={<SellerDashboard />} />
               <Route path="products" element={<SellerProducts />} />
               <Route path="orders" element={<SellerOrders />} />
+              <Route path="orders/:orderId" element={<SellerOrderDetail />} />
               <Route path="analytics" element={<SellerAnalytics />} />
               <Route path="shop" element={<SellerShop />} />
               <Route path="settings" element={<SellerSettings />} />

@@ -200,10 +200,12 @@ export function SellerOrderDetailModal({
             </div>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={() => onViewInvoice(order)}>
-                <FileText className="h-4 w-4" />
+                <FileText className="h-4 w-4 mr-1" />
+                Invoice
               </Button>
               <Button variant="ghost" size="sm" onClick={() => onOpenChat(order)}>
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4 mr-1" />
+                Chat
               </Button>
             </div>
           </div>
