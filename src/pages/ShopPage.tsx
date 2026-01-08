@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Store, MapPin, BadgeCheck, ArrowLeft, Package } from 'lucide-react';
+import { Store, MapPin, BadgeCheck, ArrowLeft, Package, LayoutGrid, Grid2X2, Grid3X3 } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePublicShop, usePublicShopProducts } from '@/hooks/usePublicShops';
@@ -9,8 +10,17 @@ import ProductCard from '@/components/product/ProductCard';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
+type ViewSize = 'small' | 'medium' | 'large';
+
+const sizeConfig: Record<ViewSize, { mobile: string; desktop: string; cols: string }> = {
+  small: { mobile: 'w-[120px]', desktop: 'lg:w-[140px]', cols: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7' },
+  medium: { mobile: 'w-[140px]', desktop: 'lg:w-[160px]', cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' },
+  large: { mobile: 'w-[180px]', desktop: 'lg:w-[200px]', cols: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' },
+};
+
 export default function ShopPage() {
   const { slug } = useParams<{ slug: string }>();
+  const [viewSize, setViewSize] = useState<ViewSize>('medium');
   const { data: shop, isLoading: shopLoading, error: shopError } = usePublicShop(slug || '');
   const { data: products = [], isLoading: productsLoading } = usePublicShopProducts(shop?.id || '');
 
@@ -127,20 +137,38 @@ export default function ShopPage() {
 
         {/* Products Section */}
         <section className="container mx-auto px-3 py-6 lg:py-8">
-          <h2 className="text-lg lg:text-xl font-display font-bold mb-4">
-            All Products
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg lg:text-xl font-display font-bold">
+              All Products
+            </h2>
+            <ToggleGroup 
+              type="single" 
+              value={viewSize} 
+              onValueChange={(value) => value && setViewSize(value as ViewSize)}
+              className="bg-muted/50 rounded-lg p-1"
+            >
+              <ToggleGroupItem value="small" aria-label="Small view" className="h-7 w-7 p-0">
+                <Grid3X3 className="h-3.5 w-3.5" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="medium" aria-label="Medium view" className="h-7 w-7 p-0">
+                <Grid2X2 className="h-3.5 w-3.5" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="large" aria-label="Large view" className="h-7 w-7 p-0">
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
 
           {productsLoading ? (
-            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+            <div className={`grid ${sizeConfig[viewSize].cols} gap-3`}>
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="w-[140px] lg:w-[160px] aspect-[3/4] rounded-lg flex-shrink-0" />
+                <Skeleton key={i} className={`${sizeConfig[viewSize].mobile} ${sizeConfig[viewSize].desktop} aspect-[3/4] rounded-lg`} />
               ))}
             </div>
           ) : products.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+            <div className={`grid ${sizeConfig[viewSize].cols} gap-3`}>
               {products.map((product, index) => (
-                <div key={product.id} className="w-[140px] lg:w-[160px] flex-shrink-0">
+                <div key={product.id} className={`${sizeConfig[viewSize].mobile} ${sizeConfig[viewSize].desktop}`}>
                   <ProductCard product={product} index={index} />
                 </div>
               ))}
