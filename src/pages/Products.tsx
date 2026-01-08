@@ -229,13 +229,12 @@ const Products = () => {
         {/* Toolbar */}
         <section className="sticky top-12 lg:top-14 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
           <div className="container mx-auto px-4 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
                 <Button
                   variant={isFilterOpen ? 'default' : 'outline'}
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="lg:hidden h-9 px-3"
-                  size="sm"
+                  className="lg:hidden"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   Filters
@@ -250,23 +249,23 @@ const Products = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end">
+              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
                   <button
                     onClick={() => setGridCols(3)}
-                    className={`p-1.5 sm:p-2 rounded-md transition-colors ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    className={`p-2 rounded-md transition-colors ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     title="3 Columns"
                   >
-                    <LayoutGrid className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <LayoutGrid className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setGridCols(4)}
-                    className={`p-1.5 sm:p-2 rounded-md transition-colors ${gridCols === 4 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    className={`p-2 rounded-md transition-colors ${gridCols === 4 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}
                     title="4 Columns"
                   >
-                    <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 16 16" fill="currentColor">
+                    <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
                       <rect x="1" y="1" width="3" height="3" rx="0.5" />
                       <rect x="5" y="1" width="3" height="3" rx="0.5" />
                       <rect x="9" y="1" width="3" height="3" rx="0.5" />
@@ -275,18 +274,18 @@ const Products = () => {
                   </button>
                   <button
                     onClick={() => setGridCols(5)}
-                    className={`p-1.5 sm:p-2 rounded-md transition-colors ${gridCols === 5 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    className={`p-2 rounded-md transition-colors ${gridCols === 5 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}
                      title="5 Columns"
                   >
-                    <Grid3X3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <Grid3X3 className="h-4 w-4" />
                   </button>
                 </div>
 
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-9 sm:h-10 px-2 sm:px-4 bg-secondary border border-border rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 max-w-[110px] sm:max-w-none"
+                  className="h-10 px-4 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   <option value="popularity">Popularity</option>
                   <option value="newest">Newest First</option>
