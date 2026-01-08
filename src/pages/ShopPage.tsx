@@ -1,28 +1,41 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Store, MapPin, BadgeCheck, ArrowLeft, Package, LayoutGrid, Grid2X2, Grid3X3 } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { usePublicShop, usePublicShopProducts } from '@/hooks/usePublicShops';
-import ProductCard from '@/components/product/ProductCard';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import { useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Store, MapPin, BadgeCheck, ArrowLeft, Package, LayoutGrid, Grid2X2, Grid3X3 } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePublicShop, usePublicShopProducts } from "@/hooks/usePublicShops";
+import ProductCard from "@/components/product/ProductCard";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
-type ViewSize = 'small' | 'medium' | 'large';
+type ViewSize = "xsmall" | "small" | "medium";
 
 const sizeConfig: Record<ViewSize, { mobile: string; desktop: string; cols: string }> = {
-  small: { mobile: 'w-[120px]', desktop: 'lg:w-[140px]', cols: 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7' },
-  medium: { mobile: 'w-[140px]', desktop: 'lg:w-[160px]', cols: 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' },
-  large: { mobile: 'w-[180px]', desktop: 'lg:w-[200px]', cols: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' },
+  xsmall: {
+    mobile: "w-[110px]",
+    desktop: "lg:w-[130px]",
+    cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7",
+  },
+  small: {
+    mobile: "w-[120px]",
+    desktop: "lg:w-[140px]",
+    cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7",
+  },
+  medium: {
+    mobile: "w-[140px]",
+    desktop: "lg:w-[160px]",
+    cols: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6",
+  },
+  // large: { mobile: 'w-[180px]', desktop: 'lg:w-[200px]', cols: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' },
 };
 
 export default function ShopPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [viewSize, setViewSize] = useState<ViewSize>('medium');
-  const { data: shop, isLoading: shopLoading, error: shopError } = usePublicShop(slug || '');
-  const { data: products = [], isLoading: productsLoading } = usePublicShopProducts(shop?.id || '');
+  const [viewSize, setViewSize] = useState<ViewSize>("small");
+  const { data: shop, isLoading: shopLoading, error: shopError } = usePublicShop(slug || "");
+  const { data: products = [], isLoading: productsLoading } = usePublicShopProducts(shop?.id || "");
 
   if (shopLoading) {
     return (
@@ -67,11 +80,7 @@ export default function ShopPage() {
         {/* Shop Banner */}
         <div className="relative h-32 lg:h-48 overflow-hidden">
           {shop.banner_url ? (
-            <img
-              src={shop.banner_url}
-              alt={shop.shop_name || 'Shop banner'}
-              className="w-full h-full object-cover"
-            />
+            <img src={shop.banner_url} alt={shop.shop_name || "Shop banner"} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-background" />
           )}
@@ -88,11 +97,7 @@ export default function ShopPage() {
             {/* Logo */}
             <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden border-4 border-background bg-card shadow-lg flex-shrink-0">
               {shop.logo_url ? (
-                <img
-                  src={shop.logo_url}
-                  alt={shop.shop_name || 'Shop logo'}
-                  className="w-full h-full object-cover"
-                />
+                <img src={shop.logo_url} alt={shop.shop_name || "Shop logo"} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-primary/10">
                   <Store className="h-12 w-12 text-primary" />
@@ -103,25 +108,19 @@ export default function ShopPage() {
             {/* Details */}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-xl lg:text-2xl font-display font-bold">
-                  {shop.shop_name}
-                </h1>
-                {shop.is_verified && (
-                  <BadgeCheck className="h-5 w-5 text-primary" />
-                )}
+                <h1 className="text-xl lg:text-2xl font-display font-bold">{shop.shop_name}</h1>
+                {shop.is_verified && <BadgeCheck className="h-5 w-5 text-primary" />}
               </div>
 
               {(shop.city || shop.state) && (
                 <p className="text-xs lg:text-sm text-muted-foreground flex items-center gap-1 mb-2">
                   <MapPin className="h-3 w-3" />
-                  {[shop.city, shop.state].filter(Boolean).join(', ')}
+                  {[shop.city, shop.state].filter(Boolean).join(", ")}
                 </p>
               )}
 
               {shop.description && (
-                <p className="text-xs lg:text-sm text-muted-foreground max-w-2xl line-clamp-2">
-                  {shop.description}
-                </p>
+                <p className="text-xs lg:text-sm text-muted-foreground max-w-2xl line-clamp-2">{shop.description}</p>
               )}
             </div>
           </motion.div>
@@ -138,31 +137,35 @@ export default function ShopPage() {
         {/* Products Section */}
         <section className="container mx-auto px-3 py-6 lg:py-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg lg:text-xl font-display font-bold">
-              All Products
-            </h2>
-            <ToggleGroup 
-              type="single" 
-              value={viewSize} 
+            <h2 className="text-lg lg:text-xl font-display font-bold">All Products</h2>
+            <ToggleGroup
+              type="single"
+              value={viewSize}
               onValueChange={(value) => value && setViewSize(value as ViewSize)}
               className="bg-muted/50 rounded-lg p-1"
             >
+              <ToggleGroupItem value="xsmall" aria-label="Compact view" className="h-7 w-7 p-0">
+                <Grid3X3 className="h-3.5 w-3.5" />
+              </ToggleGroupItem>
               <ToggleGroupItem value="small" aria-label="Small view" className="h-7 w-7 p-0">
                 <Grid3X3 className="h-3.5 w-3.5" />
               </ToggleGroupItem>
               <ToggleGroupItem value="medium" aria-label="Medium view" className="h-7 w-7 p-0">
                 <Grid2X2 className="h-3.5 w-3.5" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="large" aria-label="Large view" className="h-7 w-7 p-0">
+              {/* <ToggleGroupItem value="large" aria-label="Large view" className="h-7 w-7 p-0">
                 <LayoutGrid className="h-3.5 w-3.5" />
-              </ToggleGroupItem>
+              </ToggleGroupItem> */}
             </ToggleGroup>
           </div>
 
           {productsLoading ? (
             <div className={`grid ${sizeConfig[viewSize].cols} gap-3`}>
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className={`${sizeConfig[viewSize].mobile} ${sizeConfig[viewSize].desktop} aspect-[3/4] rounded-lg`} />
+                <Skeleton
+                  key={i}
+                  className={`${sizeConfig[viewSize].mobile} ${sizeConfig[viewSize].desktop} aspect-[3/4] rounded-lg`}
+                />
               ))}
             </div>
           ) : products.length > 0 ? (
@@ -177,11 +180,11 @@ export default function ShopPage() {
             <div className="text-center py-12">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-2">No Products Yet</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                This shop hasn't listed any products yet.
-              </p>
+              <p className="text-sm text-muted-foreground mb-4">This shop hasn't listed any products yet.</p>
               <Link to="/products">
-                <Button variant="outline" size="sm">Browse Other Products</Button>
+                <Button variant="outline" size="sm">
+                  Browse Other Products
+                </Button>
               </Link>
             </div>
           )}
