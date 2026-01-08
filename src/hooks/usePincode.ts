@@ -65,9 +65,8 @@ export function getEstimatedDelivery(
 
   // Check if product has specific deliverable pincodes
   if (deliverablePincodes && deliverablePincodes.length > 0) {
-    const isDeliverable = deliverablePincodes.some(
-      (p) => p === userPincode || p.startsWith(userPincode.slice(0, 3))
-    );
+    // Exact pincode match only - no partial matching
+    const isDeliverable = deliverablePincodes.includes(userPincode);
     
     if (!isDeliverable) {
       return {
