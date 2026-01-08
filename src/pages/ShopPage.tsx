@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Store, MapPin, BadgeCheck, ArrowLeft, Package, LayoutGrid, Grid2X2, Grid3X3 } from "lucide-react";
+import { Store, MapPin, BadgeCheck, ArrowLeft, Package, Grid2X2, Grid3X3, LayoutList } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +33,7 @@ const sizeConfig: Record<ViewSize, { mobile: string; desktop: string; cols: stri
 
 export default function ShopPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [viewSize, setViewSize] = useState<ViewSize>("small");
+  const [viewSize, setViewSize] = useState<ViewSize>("xsmall");
   const { data: shop, isLoading: shopLoading, error: shopError } = usePublicShop(slug || "");
   const { data: products = [], isLoading: productsLoading } = usePublicShopProducts(shop?.id || "");
 
@@ -144,8 +144,8 @@ export default function ShopPage() {
               onValueChange={(value) => value && setViewSize(value as ViewSize)}
               className="bg-muted/50 rounded-lg p-1"
             >
-              <ToggleGroupItem value="xsmall" aria-label="Compact view" className="h-7 w-7 p-0">
-                <Grid3X3 className="h-3.5 w-3.5" />
+              <ToggleGroupItem value="xsmall" aria-label="Extra small view" className="h-7 w-7 p-0">
+                <LayoutList className="h-3.5 w-3.5" />
               </ToggleGroupItem>
               <ToggleGroupItem value="small" aria-label="Small view" className="h-7 w-7 p-0">
                 <Grid3X3 className="h-3.5 w-3.5" />
@@ -153,9 +153,6 @@ export default function ShopPage() {
               <ToggleGroupItem value="medium" aria-label="Medium view" className="h-7 w-7 p-0">
                 <Grid2X2 className="h-3.5 w-3.5" />
               </ToggleGroupItem>
-              {/* <ToggleGroupItem value="large" aria-label="Large view" className="h-7 w-7 p-0">
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </ToggleGroupItem> */}
             </ToggleGroup>
           </div>
 
