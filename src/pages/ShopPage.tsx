@@ -16,17 +16,17 @@ const sizeConfig: Record<ViewSize, { mobile: string; desktop: string; cols: stri
   xsmall: {
     mobile: "w-full",
     desktop: "w-full",
-    cols: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6",
+    cols: "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6",
   },
   small: {
     mobile: "w-full",
     desktop: "w-full",
-    cols: "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4",
+    cols: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4",
   },
   medium: {
     mobile: "w-full",
     desktop: "w-full",
-    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3",
+    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3",
   },
 };
 

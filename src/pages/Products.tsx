@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, ChevronDown, Grid3X3, LayoutGrid } from 'lucide-react';
+import { Filter, X, ChevronDown, Grid3X3, LayoutGrid, Grid2X2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePublicProducts } from '@/hooks/usePublicProducts';
 import { useCategories } from '@/hooks/useCategories';
@@ -71,7 +71,7 @@ const FilterSection = ({
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [gridCols, setGridCols] = useState<2 | 3 | 4>(3);
+  const [gridCols, setGridCols] = useState<2 | 3 | 4 | 5>(4); // Default to 4 for better density
   const [sortBy, setSortBy] = useState('popularity');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -255,13 +255,15 @@ const Products = () => {
                     onClick={() => setGridCols(2)}
                     className={`p-2 rounded-md transition-colors ${gridCols === 2 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}
+                    title="2 Columns"
                   >
-                    <Grid3X3 className="h-4 w-4" />
+                    <Grid2X2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setGridCols(3)}
                     className={`p-2 rounded-md transition-colors ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}
+                    title="3 Columns"
                   >
                     <LayoutGrid className="h-4 w-4" />
                   </button>
@@ -269,6 +271,7 @@ const Products = () => {
                     onClick={() => setGridCols(4)}
                     className={`p-2 rounded-md transition-colors ${gridCols === 4 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                       }`}
+                    title="4 Columns"
                   >
                     <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
                       <rect x="1" y="1" width="3" height="3" rx="0.5" />
@@ -276,6 +279,14 @@ const Products = () => {
                       <rect x="9" y="1" width="3" height="3" rx="0.5" />
                       <rect x="13" y="1" width="2" height="3" rx="0.5" />
                     </svg>
+                  </button>
+                  <button
+                    onClick={() => setGridCols(5)}
+                    className={`p-2 rounded-md transition-colors ${gridCols === 5 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                     title="5 Columns"
+                  >
+                    <Grid3X3 className="h-4 w-4" />
                   </button>
                 </div>
 
@@ -379,8 +390,12 @@ const Products = () => {
                   </div>
                 ) : (
                   <div
-                    className={`grid gap-4 lg:gap-6 auto-rows-fr ${gridCols === 2 ? 'grid-cols-2' : gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
-                      }`}
+                    className={`grid gap-4 lg:gap-6 auto-rows-fr ${
+                      gridCols === 2 ? 'grid-cols-2' : 
+                      gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 
+                      gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' :
+                      'grid-cols-2 lg:grid-cols-5'
+                    }`}
                   >
                     {filteredProducts.map((product, index) => (
                       <div key={product.id} className="h-full">
