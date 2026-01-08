@@ -71,7 +71,7 @@ const FilterSection = ({
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [gridCols, setGridCols] = useState<2 | 3 | 4 | 5>(4); // Default to 4 for better density
+  const [gridCols, setGridCols] = useState<3 | 4 | 5>(4); // Default to 4 for better density
   const [sortBy, setSortBy] = useState('popularity');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -250,15 +250,7 @@ const Products = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="hidden lg:flex items-center gap-1 p-1 bg-secondary rounded-lg">
-                  <button
-                    onClick={() => setGridCols(2)}
-                    className={`p-2 rounded-md transition-colors ${gridCols === 2 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    title="2 Columns"
-                  >
-                    <Grid2X2 className="h-4 w-4" />
-                  </button>
+                <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
                   <button
                     onClick={() => setGridCols(3)}
                     className={`p-2 rounded-md transition-colors ${gridCols === 3 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
@@ -391,7 +383,6 @@ const Products = () => {
                 ) : (
                   <div
                     className={`grid gap-4 lg:gap-6 auto-rows-fr ${
-                      gridCols === 2 ? 'grid-cols-2' : 
                       gridCols === 3 ? 'grid-cols-2 lg:grid-cols-3' : 
                       gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' :
                       'grid-cols-2 lg:grid-cols-5'
