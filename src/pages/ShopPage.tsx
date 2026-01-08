@@ -14,21 +14,20 @@ type ViewSize = "xsmall" | "small" | "medium";
 
 const sizeConfig: Record<ViewSize, { mobile: string; desktop: string; cols: string }> = {
   xsmall: {
-    mobile: "w-[110px]",
-    desktop: "lg:w-[130px]",
-    cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7",
-  },
-  small: {
-    mobile: "w-[120px]",
-    desktop: "lg:w-[140px]",
-    cols: "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7",
-  },
-  medium: {
-    mobile: "w-[140px]",
-    desktop: "lg:w-[160px]",
+    mobile: "w-full",
+    desktop: "w-full",
     cols: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6",
   },
-  // large: { mobile: 'w-[180px]', desktop: 'lg:w-[200px]', cols: 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' },
+  small: {
+    mobile: "w-full",
+    desktop: "w-full",
+    cols: "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4",
+  },
+  medium: {
+    mobile: "w-full",
+    desktop: "w-full",
+    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3",
+  },
 };
 
 export default function ShopPage() {
