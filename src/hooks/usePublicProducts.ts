@@ -161,14 +161,12 @@ export function usePublicProduct(slugOrId: string) {
       if (error) throw error;
       if (!product?.shop_id) throw new Error('Product not found or shop is not active');
 
-      // For single product, also fetch payment info from the shop
-      // Only sellers can see their own shop's sensitive data, so we use shops_public for general info
-      // Payment info needs to be fetched separately using the seller_id
+      // Fetch payment info from the public payment view (accessible to all users including anonymous)
       const { data: shop } = await supabase
-        .from('shops')
+        .from('shops_payment_public')
         .select('upi_id, payment_qr_url, accepts_cod, payment_instructions')
         .eq('id', product.shop_id)
-        .single();
+        .maybeSingle();
 
       return {
         id: product.id!,
