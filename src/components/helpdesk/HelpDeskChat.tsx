@@ -175,29 +175,30 @@ export function HelpDeskChat({ productContext, orderContext }: HelpDeskChatProps
             <Button
               onClick={() => setIsOpen(true)}
               size="lg"
-              className="rounded-full h-12 w-12 shadow-lg bg-primary hover:bg-primary/90"
+              className="rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-lg bg-primary hover:bg-primary/90"
             >
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Chat Window */}
+      {/* Chat Window - Full screen on mobile, floating on desktop */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-4 right-4 z-50 w-[350px] sm:w-[380px] h-[500px] bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed z-50 bg-background border border-border shadow-2xl flex flex-col overflow-hidden
+              inset-0 sm:inset-auto sm:bottom-4 sm:right-4 sm:w-[380px] sm:h-[500px] sm:rounded-xl"
           >
             {/* Header */}
-            <div className="p-3 border-b border-border bg-primary text-primary-foreground flex items-center justify-between">
+            <div className="p-3 sm:p-4 border-b border-border bg-primary text-primary-foreground flex items-center justify-between safe-area-top">
               <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
+                <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
                 <div>
-                  <h3 className="font-semibold text-sm">Help Desk</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">Help Desk</h3>
                   <p className="text-xs opacity-80">AI-powered support</p>
                 </div>
               </div>
@@ -205,29 +206,29 @@ export function HelpDeskChat({ productContext, orderContext }: HelpDeskChatProps
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
-                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                className="h-8 w-8 sm:h-9 sm:w-9 text-primary-foreground hover:bg-primary-foreground/20"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-3" ref={scrollRef}>
-              <div className="space-y-3">
+            <ScrollArea className="flex-1 p-3 sm:p-4" ref={scrollRef}>
+              <div className="space-y-3 sm:space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex gap-2 ${
+                    className={`flex gap-2 sm:gap-3 ${
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     {message.role === 'assistant' && (
-                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Bot className="h-3.5 w-3.5 text-primary" />
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                      className={`max-w-[85%] sm:max-w-[80%] rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-sm ${
                         message.role === 'user'
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted text-foreground'
@@ -238,8 +239,8 @@ export function HelpDeskChat({ productContext, orderContext }: HelpDeskChatProps
                       )}
                     </div>
                     {message.role === 'user' && (
-                      <div className="h-6 w-6 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                        <User className="h-3.5 w-3.5" />
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                        <User className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
                     )}
                   </div>
@@ -249,20 +250,20 @@ export function HelpDeskChat({ productContext, orderContext }: HelpDeskChatProps
 
             {/* Quick Actions */}
             {messages.length <= 1 && (
-              <div className="px-3 py-2 border-t border-border">
+              <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-border">
                 <p className="text-xs text-muted-foreground mb-2">Quick actions:</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {quickActions.map((action) => (
                     <Button
                       key={action.label}
                       variant="outline"
                       size="sm"
-                      className="text-xs h-7 px-2"
+                      className="text-xs h-8 px-3"
                       onClick={() => {
                         setInput(action.message);
                       }}
                     >
-                      <action.icon className="h-3 w-3 mr-1" />
+                      <action.icon className="h-3.5 w-3.5 mr-1.5" />
                       {action.label}
                     </Button>
                   ))}
@@ -271,7 +272,7 @@ export function HelpDeskChat({ productContext, orderContext }: HelpDeskChatProps
             )}
 
             {/* Input */}
-            <div className="p-3 border-t border-border">
+            <div className="p-3 sm:p-4 border-t border-border safe-area-bottom">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -283,14 +284,14 @@ export function HelpDeskChat({ productContext, orderContext }: HelpDeskChatProps
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 text-sm h-9"
+                  className="flex-1 text-sm h-10 sm:h-11"
                   disabled={isLoading}
                 />
                 <Button
                   type="submit"
                   size="icon"
                   disabled={!input.trim() || isLoading}
-                  className="h-9 w-9"
+                  className="h-10 w-10 sm:h-11 sm:w-11"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
