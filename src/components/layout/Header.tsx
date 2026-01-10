@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings, ShieldCheck, Store, MapPin } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, User, LogOut, Settings, ShieldCheck, Store, MapPin, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,22 +10,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useUnreadNotificationCount } from '@/hooks/useNotifications';
 import NotificationDropdown from './NotificationDropdown';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import SearchDropdown from './SearchDropdown';
 import CartDropdown from './CartDropdown';
+import CartSheetContent from './CartSheetContent';
+import NotificationSheetContent from './NotificationSheetContent';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartSheetOpen, setIsCartSheetOpen] = useState(false);
+  const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut, isAdmin, isSeller } = useAuth();
   const { data: cartItems = [] } = useCart();
   const { data: wishlist = [] } = useWishlist();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const isMobile = useIsMobile();
 
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
   const wishlistCount = wishlist.length;
@@ -42,88 +51,168 @@ const Header = () => {
     navigate('/');
   };
 
+  const handleCartClick = () => {
+    if (isMobile) {
+      setIsCartSheetOpen(true);
+    } else {
+      setIsCartOpen(!isCartOpen);
+    }
+  };
+
+  const handleNotificationClick = () => {
+    if (isMobile) {
+      setIsNotificationSheetOpen(true);
+    }
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-      <div className="container mx-auto px-3">
-        <div className="flex items-center justify-between h-12 lg:h-14">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-1">
-            <motion.div 
-              className="text-lg lg:text-xl font-display font-bold gradient-text"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: 'spring', stiffness: 400 }}
-            >
-              Gamchha
-            </motion.div>
-            <span className="text-[10px] text-muted-foreground hidden sm:block">DUKAAN</span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-5">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                to={link.path}
-                className="relative text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-300 group"
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto px-3">
+          <div className="flex items-center justify-between h-12 lg:h-14">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-1">
+              <motion.div 
+                className="text-lg lg:text-xl font-display font-bold gradient-text"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: 'spring', stiffness: 400 }}
               >
-                {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
-              </Link>
-            ))}
-          </nav>
+                Gamchha
+              </motion.div>
+              <span className="text-[10px] text-muted-foreground hidden sm:block">DUKAAN</span>
+            </Link>
 
-          {/* Actions */}
-          <div className="flex items-center gap-1 lg:gap-2">
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
-            {/* Track Order */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/track-order')}
-              className="relative hidden sm:flex h-8 w-8"
-              title="Track Order"
-            >
-              <MapPin className="h-4 w-4" />
-            </Button>
-
-            {/* Search */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="relative h-8 w-8"
-            >
-              <Search className="h-4 w-4" />
-            </Button>
-
-            {/* Wishlist */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/wishlist')}
-              className="relative h-8 w-8"
-            >
-              <Heart className="h-4 w-4" />
-              {wishlistCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-5">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className="relative text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-300 group"
                 >
-                  {wishlistCount}
-                </motion.span>
-              )}
-            </Button>
+                  {link.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+                </Link>
+              ))}
+            </nav>
 
-            {/* Cart */}
-            <div className="relative">
+            {/* Actions */}
+            <div className="flex items-center gap-0.5 lg:gap-1">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
+              {/* Track Order - Desktop with label */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/track-order')}
+                className="relative hidden lg:flex items-center gap-1 h-8 px-2"
+                title="Track Order"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                <span className="text-[10px]">Track</span>
+              </Button>
+
+              {/* Track Order - Mobile icon only */}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsCartOpen(!isCartOpen)}
-                className="relative h-8 w-8"
+                onClick={() => navigate('/track-order')}
+                className="relative flex lg:hidden h-8 w-8"
+                title="Track Order"
+              >
+                <MapPin className="h-4 w-4" />
+              </Button>
+
+              {/* Search - Desktop with label */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className="relative hidden lg:flex items-center gap-1 h-8 px-2"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="text-[10px]">Search</span>
+              </Button>
+
+              {/* Search - Mobile icon only */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className="relative flex lg:hidden h-8 w-8"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+
+              {/* Wishlist - Desktop with label */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/wishlist')}
+                className="relative hidden lg:flex items-center gap-1 h-8 px-2"
+              >
+                <Heart className="h-3.5 w-3.5" />
+                <span className="text-[10px]">Wishlist</span>
+                {wishlistCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 right-0 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
+                  >
+                    {wishlistCount}
+                  </motion.span>
+                )}
+              </Button>
+
+              {/* Wishlist - Mobile icon only */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/wishlist')}
+                className="relative flex lg:hidden h-8 w-8"
+              >
+                <Heart className="h-4 w-4" />
+                {wishlistCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
+                  >
+                    {wishlistCount}
+                  </motion.span>
+                )}
+              </Button>
+
+              {/* Cart - Desktop with label */}
+              <div className="relative hidden lg:block">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCartClick}
+                  className="relative flex items-center gap-1 h-8 px-2"
+                >
+                  <ShoppingBag className="h-3.5 w-3.5" />
+                  <span className="text-[10px]">Cart</span>
+                  {cartCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-0.5 right-0 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
+                    >
+                      {cartCount}
+                    </motion.span>
+                  )}
+                </Button>
+                <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+              </div>
+
+              {/* Cart - Mobile icon only with Sheet */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCartClick}
+                className="relative flex lg:hidden h-8 w-8"
               >
                 <ShoppingBag className="h-4 w-4" />
                 {cartCount > 0 && (
@@ -136,11 +225,30 @@ const Header = () => {
                   </motion.span>
                 )}
               </Button>
-              <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-            </div>
 
-            {/* Notifications */}
-            {user && <NotificationDropdown />}
+              {/* Notifications - Desktop */}
+              {user && !isMobile && <NotificationDropdown />}
+
+              {/* Notifications - Mobile with Sheet */}
+              {user && isMobile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNotificationClick}
+                  className="relative h-8 w-8"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </motion.span>
+                  )}
+                </Button>
+              )}
 
             {/* User Menu */}
             {user ? (
@@ -417,6 +525,33 @@ const Header = () => {
         )}
       </AnimatePresence>
     </header>
+
+    {/* Mobile Cart Sheet */}
+    <Sheet open={isCartSheetOpen} onOpenChange={setIsCartSheetOpen}>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-xl">
+        <SheetHeader className="pb-2">
+          <SheetTitle className="flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5 text-primary" />
+            Your Cart ({cartCount})
+          </SheetTitle>
+        </SheetHeader>
+        <CartSheetContent onClose={() => setIsCartSheetOpen(false)} />
+      </SheetContent>
+    </Sheet>
+
+    {/* Mobile Notification Sheet */}
+    <Sheet open={isNotificationSheetOpen} onOpenChange={setIsNotificationSheetOpen}>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-xl">
+        <SheetHeader className="pb-2">
+          <SheetTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            Notifications
+          </SheetTitle>
+        </SheetHeader>
+        <NotificationSheetContent onClose={() => setIsNotificationSheetOpen(false)} />
+      </SheetContent>
+    </Sheet>
+  </>
   );
 };
 
