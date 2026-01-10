@@ -159,14 +159,18 @@ export function usePublicProduct(slugOrId: string) {
       }
 
       if (error) throw error;
-      if (!product?.shop_id) throw new Error('Product not found or shop is not active');
+      if (!product) throw new Error('Product not found');
 
-      // Fetch payment info from the public payment view (accessible to all users including anonymous)
-      const { data: shop } = await supabase
-        .from('shops_payment_public')
-        .select('upi_id, payment_qr_url, accepts_cod, payment_instructions')
-        .eq('id', product.shop_id)
-        .maybeSingle();
+      // Fetch payment info from the public payment view if shop_id exists
+      let shop = null;
+      if (product.shop_id) {
+        const { data: shopData } = await supabase
+          .from('shops_payment_public')
+          .select('upi_id, payment_qr_url, accepts_cod, payment_instructions')
+          .eq('id', product.shop_id)
+          .maybeSingle();
+        shop = shopData;
+      }
 
       return {
         id: product.id!,
