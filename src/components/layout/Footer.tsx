@@ -1,9 +1,36 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Instagram, Facebook, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { Instagram, Facebook, Twitter, Youtube, Mail, Phone, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { useNewsletterSubscribe } from '@/hooks/useWebsiteRating';
+import WebsiteRatingModal from '@/components/rating/WebsiteRatingModal';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const { subscribe } = useNewsletterSubscribe();
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error('Please enter your email');
+      return;
+    }
+    setIsSubscribing(true);
+    try {
+      await subscribe(email);
+      toast.success('Welcome to the Gamchha family! 🎉');
+      setEmail('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to subscribe');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   const footerLinks = {
     shop: [
       { name: 'All Products', path: '/products' },
@@ -34,6 +61,8 @@ const Footer = () => {
 
   return (
     <footer className="bg-secondary/50 border-t border-border/50">
+      <WebsiteRatingModal isOpen={showRatingModal} onClose={() => setShowRatingModal(false)} />
+      
       {/* Newsletter Section */}
       <div className="border-b border-border/30">
         <div className="container mx-auto px-3 py-6 lg:py-8">
@@ -46,16 +75,18 @@ const Footer = () => {
                 Get 10% off your first order and stay updated.
               </p>
             </div>
-            <div className="flex w-full lg:w-auto gap-2">
+            <form onSubmit={handleSubscribe} className="flex w-full lg:w-auto gap-2">
               <input
                 type="email"
                 placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 lg:w-64 h-9 px-3 text-xs bg-secondary/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
-              <Button variant="hero" size="sm">
-                Subscribe
+              <Button type="submit" variant="hero" size="sm" disabled={isSubscribing}>
+                {isSubscribing ? '...' : 'Subscribe'}
               </Button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
@@ -166,7 +197,14 @@ const Footer = () => {
         <div className="container mx-auto px-3 py-3">
           <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-[10px] text-muted-foreground">
             <p>© 2024 Gamchha Dukaan. All rights reserved.</p>
-            <div className="flex gap-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setShowRatingModal(true)}
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+              >
+                <Star className="h-3 w-3" />
+                Rate Us
+              </button>
               <Link to="/privacy" className="hover:text-primary transition-colors">
                 Privacy
               </Link>
