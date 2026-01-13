@@ -13,7 +13,8 @@ import {
   Star,
   FolderOpen,
   Image,
-  Home
+  Home,
+  Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const navItems = [
   { label: 'Featured', icon: Star, href: '/admin/featured' },
   { label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
   { label: 'Sellers', icon: Store, href: '/admin/sellers' },
+  { label: 'Promo Codes', icon: Tag, href: '/admin/promo-codes' },
   { label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
   { label: 'Customers', icon: Users, href: '/admin/customers' },
 ];

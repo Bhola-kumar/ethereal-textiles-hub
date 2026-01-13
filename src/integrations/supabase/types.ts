@@ -474,6 +474,8 @@ export type Database = {
           notes: string | null
           order_number: string
           payment_status: Database["public"]["Enums"]["payment_status"]
+          promo_code_id: string | null
+          promo_discount: number | null
           shipping_address: Json
           shipping_cost: number | null
           status: Database["public"]["Enums"]["order_status"]
@@ -495,6 +497,8 @@ export type Database = {
           notes?: string | null
           order_number: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          promo_code_id?: string | null
+          promo_discount?: number | null
           shipping_address: Json
           shipping_cost?: number | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -516,6 +520,8 @@ export type Database = {
           notes?: string | null
           order_number?: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          promo_code_id?: string | null
+          promo_discount?: number | null
           shipping_address?: Json
           shipping_cost?: number | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -525,7 +531,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -661,6 +675,111 @@ export type Database = {
           pincode?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      promo_code_uses: {
+        Row: {
+          created_at: string
+          discount_applied: number
+          id: string
+          order_id: string
+          promo_code_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_applied: number
+          id?: string
+          order_id: string
+          promo_code_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_applied?: number
+          id?: string
+          order_id?: string
+          promo_code_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_uses_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_code_uses_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          applies_to: string
+          code: string
+          created_at: string
+          created_by: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string | null
+          id: string
+          is_active: boolean
+          max_discount_amount: number | null
+          max_uses: number | null
+          max_uses_per_user: number | null
+          min_order_amount: number | null
+          seller_id: string | null
+          start_date: string
+          updated_at: string
+          uses_count: number
+        }
+        Insert: {
+          applies_to?: string
+          code: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          max_uses?: number | null
+          max_uses_per_user?: number | null
+          min_order_amount?: number | null
+          seller_id?: string | null
+          start_date?: string
+          updated_at?: string
+          uses_count?: number
+        }
+        Update: {
+          applies_to?: string
+          code?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          max_discount_amount?: number | null
+          max_uses?: number | null
+          max_uses_per_user?: number | null
+          min_order_amount?: number | null
+          seller_id?: string | null
+          start_date?: string
+          updated_at?: string
+          uses_count?: number
         }
         Relationships: []
       }
@@ -1303,6 +1422,15 @@ export type Database = {
       is_seller_for_order: {
         Args: { _order_id: string; _user_id: string }
         Returns: boolean
+      }
+      validate_promo_code: {
+        Args: {
+          p_code: string
+          p_seller_ids: string[]
+          p_subtotal: number
+          p_user_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {
