@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Eye, Store, CheckCircle, Zap } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Store, CheckCircle, Zap, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAddToCart } from '@/hooks/useCart';
 import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import DeliveryEstimate from '@/components/common/DeliveryEstimate';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface Product {
   id: string;
@@ -42,6 +43,7 @@ interface ProductCardProps {
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { data: wishlist = [] } = useWishlist();
   const addToCart = useAddToCart();
@@ -95,12 +97,44 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const shareUrl = `${window.location.origin}/product/${product.slug || product.id}`;
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} - ₹${product.price.toLocaleString()}`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share && isMobile) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Product link copied to clipboard!');
+      }
+    } catch (error) {
+      // User cancelled or share failed, copy to clipboard as fallback
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Product link copied to clipboard!');
+      } catch {
+        toast.error('Could not share product');
+      }
+    }
+  };
+
   const discount = originalPrice
     ? Math.round(((originalPrice - product.price) / originalPrice) * 100)
     : 0;
 
   // Use slug for product link, fallback to id
   const productLink = `/product/${product.slug || product.id}`;
+  
+  // Show actions on hover for desktop, always visible for mobile
+  const showActions = isHovered || isMobile;
 
   return (
     <motion.div
@@ -149,11 +183,11 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               )}
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Always visible on mobile */}
             <motion.div
               className="absolute top-2 right-2 flex flex-col gap-1"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : 10 }}
+              initial={{ opacity: isMobile ? 1 : 0, x: isMobile ? 0 : 10 }}
+              animate={{ opacity: showActions ? 1 : 0, x: showActions ? 0 : 10 }}
               transition={{ duration: 0.3 }}
             >
               <Button
@@ -172,42 +206,42 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 variant="glass"
                 size="icon"
                 className="h-7 w-7"
-                asChild
+                onClick={handleShare}
               >
-                <Link to={productLink} onClick={(e) => e.stopPropagation()}>
-                  <Eye className="h-3 w-3" />
-                </Link>
+                <Share2 className="h-3 w-3" />
               </Button>
             </motion.div>
 
-            {/* Action Buttons */}
-            <motion.div
-              className="absolute bottom-2 left-2 right-2 flex flex-col gap-1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Button
-                variant="hero"
-                size="sm"
-                className="w-full text-xs h-6"
-                onClick={handleBuyNow}
-                disabled={!inStock || addToCart.isPending}
+            {/* Desktop Action Buttons - Inside image on hover */}
+            {!isMobile && (
+              <motion.div
+                className="absolute bottom-2 left-2 right-2 flex flex-col gap-1"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 20 }}
+                transition={{ duration: 0.3 }}
               >
-                <Zap className="h-3 w-3 mr-1" />
-                Buy Now
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs h-6 bg-background/80 backdrop-blur-sm"
-                onClick={handleAddToCart}
-                disabled={!inStock || addToCart.isPending}
-              >
-                <ShoppingBag className="h-3 w-3 mr-1" />
-                {!inStock ? 'Out of Stock' : 'Add to Cart'}
-              </Button>
-            </motion.div>
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="w-full text-xs h-6"
+                  onClick={handleBuyNow}
+                  disabled={!inStock || addToCart.isPending}
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  Buy Now
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs h-6 bg-background/80 backdrop-blur-sm"
+                  onClick={handleAddToCart}
+                  disabled={!inStock || addToCart.isPending}
+                >
+                  <ShoppingBag className="h-3 w-3 mr-1" />
+                  {!inStock ? 'Out of Stock' : 'Add to Cart'}
+                </Button>
+              </motion.div>
+            )}
           </div>
 
           {/* Product Info - Fixed height section */}
@@ -267,6 +301,32 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
                 compact 
               />
             </div>
+
+            {/* Mobile Action Buttons - Outside image to prevent tap issues */}
+            {isMobile && (
+              <div className="flex gap-1 mt-2 pt-2 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-[10px] h-7"
+                  onClick={handleAddToCart}
+                  disabled={!inStock || addToCart.isPending}
+                >
+                  <ShoppingBag className="h-3 w-3 mr-1" />
+                  {!inStock ? 'Out of Stock' : 'Add'}
+                </Button>
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="flex-1 text-[10px] h-7"
+                  onClick={handleBuyNow}
+                  disabled={!inStock || addToCart.isPending}
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  Buy
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </Link>
