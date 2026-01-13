@@ -47,6 +47,8 @@ import SellerAnalytics from "./pages/seller/SellerAnalytics";
 import SellerShop from "./pages/seller/SellerShop";
 import SellerSettings from "./pages/seller/SellerSettings";
 import SellerOrderDetail from "./pages/seller/SellerOrderDetail";
+import SellerPromoCodes from "./pages/seller/SellerPromoCodes";
+import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/utils/ScrollToTop";
 
@@ -96,6 +98,7 @@ const App = () => (
               <Route path="categories" element={<AdminCategories />} />
               <Route path="collections" element={<AdminCollections />} />
               <Route path="home-sections" element={<AdminHomeSections />} />
+              <Route path="promo-codes" element={<AdminPromoCodes />} />
             </Route>
 
             {/* Seller Routes */}
@@ -108,6 +111,7 @@ const App = () => (
               <Route path="analytics" element={<SellerAnalytics />} />
               <Route path="shop" element={<SellerShop />} />
               <Route path="settings" element={<SellerSettings />} />
+              <Route path="promo-codes" element={<SellerPromoCodes />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
